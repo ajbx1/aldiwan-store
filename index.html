@@ -745,6 +745,39 @@
             .bottle-img { height: 200px; }
             .perfume-card { height: 320px; }
         }
+
+        /* ============ PHONE PERFORMANCE MODE ============
+           blur() and backdrop-filter are GPU-heavy and janky on low-end phones.
+           We keep the hero "first perfumes stage" (.bottle / .fade-in) untouched
+           since that reveal was explicitly asked to stay as-is. Everything below
+           only fires under 768px, so desktop/tablet keeps the original look. */
+        @media (max-width: 768px) {
+            /* Card reveal-on-scroll: was blur(15px) -> 0 */
+            .perfume-card { filter: blur(6px); }
+            /* Section title reveal: was blur(12px) -> 0 */
+            .section-title { filter: blur(6px); }
+
+            /* Modal backdrop dimmer: was blur(8px) */
+            #modal-backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+
+            /* Order-form overlay backdrop: was blur(10px) */
+            #order-overlay-backdrop-blur { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+            /* Sticky order-form header glass: was blur(12px) */
+            .order-header { backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+
+            /* Cart drawer backdrop: was blur(8px) */
+            #cart-drawer-backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+
+            /* iOS-style confirm alert: was blur(6px) backdrop / blur(20px) panel */
+            #ios-alert-backdrop { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+            #ios-alert { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+            /* "Coming soon" locked full-bottle option: was blur(4px) */
+            .full-bottle-wrap.coming-soon.locked .full-bottle-floater { filter: blur(2px) grayscale(0.5) brightness(0.55); }
+
+            /* Dimmed (unselected) size-bottle thumbnail: was blur(0.5px) — negligible, kept for consistency */
+            .size-bottle-card:not(.selected) .bottle-visual-crop svg { filter: grayscale(0.4); }
+        }
         @media (max-width: 480px) {
             .top-text { font-size: 2.8rem; margin-top: 50px;}
             .bottle-img-wrapper { margin-top: -50px; }
@@ -1193,7 +1226,7 @@
             modal.style.height = `${rect.height}px`;
             modal.style.transform = `scale(0.96)`;
             modal.style.opacity = '0';
-            modal.style.filter = 'blur(3px)';
+            modal.style.filter = window.matchMedia('(max-width: 768px)').matches ? 'blur(1px)' : 'blur(3px)';
             modal.style.borderRadius = '20px';
             
             // Force Reflow
@@ -1230,7 +1263,7 @@
             modal.style.height = `${rect.height}px`;
             modal.style.transform = `scale(0.96)`;
             modal.style.opacity = '0';
-            modal.style.filter = 'blur(3px)';
+            modal.style.filter = window.matchMedia('(max-width: 768px)').matches ? 'blur(1px)' : 'blur(3px)';
 
             cardEl.style.opacity = '1'; // Show original card
 
