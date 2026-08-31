@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>الديوان - إختر عطرك</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Base Reset & Fonts */
+        @font-face {
+            font-family: NASKHFONT;
+            src: url(nt-panorama-naskh-long.otf);
+        }
+        /* The Naskh font's digit glyphs are broken/invisible (western 0-9 and
+           eastern-arabic ٠-٩ render blank). A second @font-face scoped to just
+           those code points via unicode-range would be the "free" fix, but it
+           only works if the fallback font is installed locally on the visitor's
+           OS — Cairo here is loaded from Google Fonts, not installed locally,
+           so that trick silently fails and digits stayed blank. The reliable
+           fix lives in JS: see numFont() below, which wraps any digit run in
+           a `.num-fix` span that explicitly forces Cairo, wherever numbers
+           appear inside NASKHFONT-styled text (prices, sizes, totals). */
+        @font-face {
+            font-family: NASKHFONT;
+            src: url(nt-panorama-naskh-long.otf);
+        }
+        .num-fix { font-family: 'Cairo', sans-serif; -webkit-text-fill-color: var(--gold, #dca74a); color: var(--gold, #dca74a); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        
+        body {
+            background-color: #050402;
+            background-image: radial-gradient(circle at 50% 20%, #302613 0%, #151109 45%, #050402 100%);
+            background-attachment: fixed;
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 400;
+            overflow-x: hidden;
+        }
+        body.no-scroll { overflow: hidden; }
+
+        /* Dynamic Header */
+        .top-glass-bar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 200px;
+            background: linear-gradient(to bottom, rgba(5, 4, 2, 0.95) 0%, rgba(5, 4, 2, 0.6) 60%, transparent 100%);
+            z-index: 90; opacity: 0; pointer-events: none; transition: opacity 0.8s ease;
+        }
+        .top-glass-bar.visible { opacity: 1; }
+
+        .logo-wrap {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.6);
+            z-index: 100; transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none;
+        }
+        .logo-wrap img { max-width: 160px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+        .logo-wrap.moved { top: 4%; transform: translate(-50%, 0) scale(1); }
+        .logo-wrap.scrolled { top: 1%; transform: translate(-50%, 0) scale(0.65); }
+
+        /* Hero Section */
+        .store-container { position: relative; width: 100vw; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        .fade-in { opacity: 0; filter: blur(20px); transform: scale(0.95); transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
+        .fade-in.visible { opacity: 1; filter: blur(0); transform: scale(1); }
+
+        .top-text { position: absolute; top: 22%; font-size: 4rem; color: #dca74a; font-weight: 600; letter-spacing: 2px; z-index: 10; font-family: 'NASKHFONT', serif; }
+
+        .bottles-stage { position: absolute; bottom: 22%; width: 100%; height: 50vh; display: flex; justify-content: center; align-items: flex-end; z-index: 5; }
+        .bottle { position: absolute; bottom: 0; left: 50%; transform-origin: bottom center; opacity: 0; filter: drop-shadow(0 0 0 rgba(0,0,0,0)) blur(25px); transition: all 1.4s cubic-bezier(0.21, 1.11, 0.81, 0.99); }
+        .b-front { height: 48vh; z-index: 5; transform: translate(-50%, 20px) scale(0.8); }
+        .b-mid { height: 42vh; z-index: 4; }
+        .b-back { height: 38vh; z-index: 3; }
+        .b-mid.left, .b-mid.right, .b-back.left, .b-back.right { transform: translate(-50%, 20px) scale(0.8); }
+
+        .bottle.visible { opacity: 1; filter: drop-shadow(0 25px 25px rgba(0,0,0,0.6)) blur(0px); }
+        .b-front.visible { transform: translate(-50%, 0) scale(1); }
+        .b-mid.left.visible { transform: translate(-105%, 0) scale(1); }
+        .b-mid.right.visible { transform: translate(5%, 0) scale(1); }
+        .b-back.left.visible { transform: translate(-140%, 0) scale(1); }
+        .b-back.right.visible { transform: translate(40%, 0) scale(1); }
+
+        .bottom-content { position: absolute; bottom: 4%; text-align: center; z-index: 10; width: 100%; }
+        .discover-text { font-family: 'NASKHFONT', serif; font-size: 3.5rem; line-height: 1.1; margin-bottom: -5px; color: #ffffff; text-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .order-text {font-family: 'NASKHFONT', serif; font-size: 1.8rem; font-weight: 800; color: #ffffff; margin-bottom: 20px; }
+        .swipe-up { font-size: 0.9rem; color: #a3a3a3; display: flex; flex-direction: column; align-items: center; gap: 5px; animation: bounce 2s infinite ease-in-out; }
+        .swipe-up svg { width: 24px; height: 24px; fill: #a3a3a3; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        /* Products Section */
+        .products-section { width: 100vw; min-height: 100vh; padding-top: 15vh; display: flex; flex-direction: column; align-items: center; padding-bottom: 100px; }
+        .section-title { font-family: 'NASKHFONT', serif; font-size: 3.5rem; color: #dca74a; margin-bottom: 100px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); opacity: 0; transform: translateY(30px); filter: blur(12px); transition: all 1s cubic-bezier(0.25, 1, 0.5, 1); }
+        .reveal-visible { opacity: 1; transform: translateY(0); filter: blur(0); }
+
+        .cards-container { display: flex; flex-direction: column; gap: 90px; width: 92%; max-width: 550px; }
+
+        /* Perfume Base Card (Front Only) */
+        .perfume-card {
+            opacity: 0; transform: translateY(40px); filter: blur(15px);
+            transition: opacity 1.2s, transform 1.2s, filter 1.2s, opacity 0.4s ease;
+            height: 380px; position: relative;
+            background: linear-gradient(145deg, rgba(30, 25, 15, 0.95), rgba(10, 8, 5, 0.98));
+            border-radius: 20px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 15px 30px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column; padding: 10px 15px 20px 15px;
+            border: 1px solid rgba(220, 167, 74, 0.4);
+            cursor: pointer;
+        }
+        .perfume-card.reveal-visible { opacity: 1; transform: translateY(0); filter: blur(0); }
+        .perfume-card:active { transform: scale(0.97); }
+        
+        .card-content-front { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-top: 10px; flex: 1; }
+        .bottle-col { display: flex; flex-direction: column; align-items: center; width: 35%; }
+        .bottle-img-wrapper { margin-top: -65px; display: flex; justify-content: center; position: relative; z-index: 10; }
+        .bottle-img { height: 250px; width: auto; object-fit: contain; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.7)); mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%); -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%); }
+        .bottle-name { font-size: 1.1rem; color: #ffffff; text-align: center; line-height: 1.3; text-shadow: 0 2px 5px rgba(0,0,0,1); position: relative; z-index: 15; margin-top: -20px; font-weight: bold; }
+        .arrow-col { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30%; margin-top: 25px; }
+        .alt-text { font-family: 'NASKHFONT', serif; font-size: 2.2rem; color: #ffffff; margin-bottom: -8px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .alt-arrow svg { width: 85px; height: 25px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8)); }
+
+        .card-action-container { text-align: center; margin-top: auto; margin-bottom: 15px; filter: drop-shadow(0 0 15px rgba(220, 167, 74, 0.5)); pointer-events: none; }
+        .learn-more-text { font-family: 'NASKHFONT', sans-serif; font-size: 1.8rem; display: inline-block; background: linear-gradient(110deg, #dca74a 20%, #ffffff 50%, #dca74a 80%); background-size: 200% auto; color: #000; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: lightSweep 3s linear infinite; }
+
+        /* MODAL BACKDROP */
+        #modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        #modal-backdrop.active { opacity: 1; pointer-events: all; }
+
+        /* POPUP MODAL (THE BACK OF THE CARD) */
+        #perfume-modal {
+            position: fixed;
+            background: linear-gradient(180deg, #1a150e 0%, #050402 100%);
+            border: 1px solid rgba(220, 167, 74, 0.6);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none; /* Displayed via JS */
+            flex-direction: column;
+            overflow: hidden;
+            /* Dimensions are controlled perfectly by JS for the transition */
+        }
+
+        .modal-inner-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 120px; }
+
+        /* Modal Close Button */
+        .close-btn {
+            position: absolute; top: 15px; left: 15px; width: 40px; height: 40px;
+            background: rgba(220, 167, 74, 0.1); border: 1px solid #dca74a; color: #dca74a;
+            border-radius: 50%; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 50; transition: all 0.45s var(--ios-ease);
+        }
+        .close-btn:hover, .close-btn:active { background: #dca74a; color: #000; transform: scale(0.9); }
+
+        /* Modal Header */
+        .modal-header { padding: 40px 20px 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .modal-title { font-family: 'NASKHFONT', serif; color: #fff; font-size: 2.6rem; text-shadow: 0 0 15px rgba(220,167,74,0.6); line-height: 1.1; flex: 1; padding-right: 15px; text-align: right; }
+        .modal-title small { display: block; font-size: 1rem; color: #bbb; font-family: 'Cairo', sans-serif; text-shadow: none; margin-top: 5px; }
+        .modal-bottle { height: 160px; object-fit: contain; filter: drop-shadow(0 15px 20px rgba(0,0,0,0.9)); margin-left: 10px; }
+
+        /* Modal Detail Tags */
+        .detail-tags { display: flex; gap: 10px; padding: 0 25px 15px 25px; }
+        .d-tag { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; color: #ccc; display: flex; align-items: center; gap: 5px; }
+        .d-tag svg { width: 14px; height: 14px; fill: #dca74a; }
+
+        /* Modal Tabs */
+        .tabs-container { display: flex; justify-content: center; gap: 15px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .tab-btn { background: none; border: none; color: #888; font-family: 'Cairo', sans-serif; font-size: 1.1rem; font-weight: 600; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; position: relative; }
+        .tab-btn.active { color: #fff; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: #dca74a; box-shadow: 0 0 10px #dca74a; }
+        .tab-content { display: none; padding: 25px 20px; color: #ddd; font-size: 1.05rem; line-height: 1.8; text-align: justify; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Accords Bar */
+        .accords-wrap { margin-bottom: 35px; }
+        .sec-title { font-size: 1.2rem; color: #dca74a; margin-bottom: 15px; border-bottom: 1px dashed rgba(220,167,74,0.3); padding-bottom: 5px; }
+        .accord-row { display: flex; align-items: center; margin-bottom: 10px; }
+        .accord-bar-container { flex: 1; background: #222; height: 26px; border-radius: 4px; overflow: hidden; margin-left: 10px; border: 1px solid #111; }
+        .accord-bar { height: 100%; display: flex; align-items: center; padding-right: 12px; font-size: 0.85rem; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* NEW BLOCKS PYRAMID */
+        .blocks-pyramid { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 20px 0 30px 0; width: 100%; position: relative; }
+        /* Vertical connecting line */
+        .blocks-pyramid::before { content: ''; position: absolute; top: 10px; bottom: 10px; left: 50%; width: 2px; background: rgba(220,167,74,0.2); z-index: 1; }
+        
+        .block-tier { 
+            display: flex; align-items: center; padding: 12px 20px; border-radius: 12px;
+            background: linear-gradient(135deg, rgba(42, 34, 22, 0.95), rgba(17, 14, 10, 0.95));
+            border: 1px solid rgba(220,167,74,0.5);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            z-index: 2; position: relative;
+        }
+        .block-top { width: 65%; }
+        .block-mid { width: 80%; }
+        .block-base { width: 95%; }
+        
+        .tier-icon-wrap { width: 35px; height: 35px; background: rgba(220,167,74,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: 15px; border: 1px solid rgba(220,167,74,0.3); }
+        .tier-icon-wrap svg { width: 20px; height: 20px; fill: #dca74a; color: #dca74a; }
+        
+        .tier-content { display: flex; flex-direction: column; flex: 1; }
+        .tier-label { font-size: 0.8rem; color: #aaa; margin-bottom: 2px; }
+        .tier-notes { font-size: 0.95rem; color: #fff; font-weight: 700; }
+
+        /* Gender tag (worn-by) */
+        .gender-symbol { color: var(--gold, #dca74a); font-weight: 800; font-size: 1rem; display: inline-block; }
+
+        /* Modal Purchase Bar — now a column: price row on top, buttons row below */
+        .purchase-bar { position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px 20px 15px 20px; background: rgba(5,4,2,0.98); border-top: 1px solid rgba(220, 167, 74, 0.3); display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+        .purchase-bar-price { text-align: center; font-size: 0.95rem; color: #ccc; pointer-events: none; }
+        .purchase-bar-price .glow-sweep-text { font-size: 1.05rem; }
+        .purchase-bar-actions { display: flex; gap: 15px; }
+        .btn-order { flex: 2; background: linear-gradient(135deg, #dca74a, #b3802e); color: #000; border: none; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 1.3rem; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+        .btn-order:active { transform: scale(0.96); }
+        .btn-cart { flex: 1; background: #2a2216; color: #dca74a; border: 1px solid #dca74a; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 5px 0; transition: all 0.2s; }
+        .btn-cart svg { width: 20px; height: 20px; fill: #dca74a; margin-bottom: 3px; }
+        .btn-cart:active { background: #dca74a; color: #000; }
+        .btn-cart:active svg { fill: #000; }
+
+        /* ============ iOS-SMOOTH GLOBAL HELPERS ============ */
+        :root {
+            --ios-ease: cubic-bezier(0.22, 0.61, 0.16, 1);
+            --ios-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+            --ios-pop: cubic-bezier(0.19, 0.86, 0.24, 1.06);
+            --gold: #dca74a;
+        }
+        button, .perfume-card, .tab-btn, .close-btn, .btn-order, .btn-cart,
+        .size-bottle-card, .type-pill, .order-submit-btn, .combo-item, .btn-back-order {
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.55s var(--ios-ease), filter 0.55s var(--ios-ease), background 0.55s var(--ios-ease), box-shadow 0.55s var(--ios-ease), opacity 0.55s var(--ios-ease);
+        }
+        button:active, .perfume-card:active, .size-bottle-card:active, .type-pill:active, .order-submit-btn:active {
+            filter: brightness(0.92);
+        }
+
+        /* Glowing sweep text (used for order selections) */
+        @keyframes lightSweep { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .glow-sweep-text {
+            font-family: 'NASKHFONT', 'Cairo', sans-serif;
+            font-size: 1.35rem;
+            display: inline-block;
+            background: linear-gradient(110deg, var(--gold) 20%, #ffffff 50%, var(--gold) 80%);
+            background-size: 200% auto;
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: lightSweep 2.4s linear infinite;
+            filter: drop-shadow(0 0 12px rgba(220,167,74,0.55));
+            text-align: center;
+        }
+
+        /* ============ Site credit badge (free-floating text, bottom-left corner) ============ */
+        .site-credit {
+            position: fixed; bottom: 20px; left: 18px; z-index: 400;
+            cursor: pointer; user-select: none; direction: ltr;
+            opacity: 0; transform: translateY(10px);
+            transition: opacity 0.9s ease, transform 0.9s ease, filter 0.6s ease, bottom 0.5s ease;
+        }
+        .site-credit.credit-visible { opacity: 1; transform: translateY(0); }
+        .site-credit.credit-hidden { opacity: 0; filter: blur(10px); transform: translateY(10px); pointer-events: none; }
+        .site-credit-text {
+            font-family: 'NASKHFONT', 'Cairo', sans-serif;
+            font-size: 0.95rem; font-weight: 700; letter-spacing: 0.3px;
+            display: inline-block; white-space: nowrap;
+            background: linear-gradient(110deg, var(--gold) 20%, #ffffff 50%, var(--gold) 80%);
+            background-size: 200% auto;
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: lightSweep 2.6s linear infinite;
+            filter: drop-shadow(0 0 10px rgba(220,167,74,0.5));
+            transition: opacity 0.45s ease, filter 0.45s ease;
+        }
+        .site-credit-text.credit-swap-out { opacity: 0; filter: blur(6px); }
+        /* Smaller / dimmer version — shown whenever the badge re-appears after the
+           first time (i.e. any scroll-back-to-top that isn't the very first load) */
+        .site-credit.credit-small { bottom: 14px; }
+        .site-credit.credit-small .site-credit-text { font-size: 0.7rem; animation-duration: 4.5s; filter: drop-shadow(0 0 4px rgba(220,167,74,0.25)); }
+
+
+        /* ============ Bottom contact footer (true end of the page) ============ */
+        .site-footer-credit {
+            width: 100%; padding: 60px 20px 50px; text-align: center;
+            border-top: 1px solid rgba(220,167,74,0.15);
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .site-footer-credit .ftc-line1 { font-family: 'NASKHFONT', serif; font-size: 1.4rem; color: #fff; }
+        .site-footer-credit .ftc-msg { font-size: 0.95rem; color: #ccc; max-width: 420px; line-height: 1.8; margin: 8px 0 12px; }
+        .site-footer-credit .ftc-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; font-size: 0.95rem; }
+        .site-footer-credit .ftc-contact a {
+            color: #fff; text-decoration: none; border: 1px solid rgba(220,167,74,0.35);
+            padding: 9px 18px; border-radius: 999px; transition: all 0.3s ease; direction: ltr; display: inline-block;
+        }
+        .site-footer-credit .ftc-contact a:hover { background: rgba(220,167,74,0.12); border-color: var(--gold); }
+
+        /* Social media links (Facebook / TikTok) — round icon buttons */
+        .ftc-social { display: flex; justify-content: center; gap: 16px; }
+        .ftc-social a {
+            width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: rgba(220,167,74,0.08); border: 1px solid rgba(220,167,74,0.35); color: var(--gold);
+            transition: all 0.3s ease;
+        }
+        .ftc-social a:hover { background: var(--gold); color: #000; transform: translateY(-3px); box-shadow: 0 8px 18px rgba(220,167,74,0.4); }
+        .ftc-social a svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* ============ ORDER OVERLAY (centered card, like the perfume modal) ============ */
+        #order-overlay {
+            position: fixed; z-index: 2000;
+            background: linear-gradient(180deg, #1a150e 0%, #050402 100%);
+            border: 1px solid rgba(220,167,74,0.6);
+            border-radius: 22px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.95), inset 0 0 30px rgba(0,0,0,0.5);
+            display: none; flex-direction: column;
+            overflow: hidden;
+            top: 50%; left: 50%;
+            width: min(94vw, 520px);
+            height: min(90vh, 800px);
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+            transition: transform 0.65s var(--ios-pop), opacity 0.45s ease-out;
+        }
+        #order-overlay.active { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        #order-overlay-backdrop-blur {
+            position: fixed; inset: 0; z-index: 1999; background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #order-overlay-backdrop-blur.active { opacity: 1; pointer-events: all; }
+
+        .order-header {
+            display: flex; align-items: center; gap: 12px; padding: 18px 16px 14px 16px;
+            border-bottom: 1px solid rgba(220,167,74,0.25);
+            background: rgba(5,4,2,0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 20;
+            border-radius: 22px 22px 0 0;
+        }
+        .btn-back-order {
+            width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--gold);
+            background: rgba(220,167,74,0.08); color: var(--gold); font-size: 1.3rem;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        .order-header-title { flex: 1; text-align: right; }
+        .order-header-title h3 { font-family: 'NASKHFONT', serif; font-size: 1.5rem; color: #fff; }
+        .order-header-title small { color: #999; font-size: 0.8rem; }
+
+        .order-scroll { flex: 1; overflow-y: auto; padding: 20px 16px 24px 16px; -webkit-overflow-scrolling: touch; }
+
+        /* Pinned footer — sibling of .order-scroll, always at the true bottom of the
+           card regardless of how much content is in the scroll area above it. */
+        .order-footer {
+            flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px;
+            border-top: 1px solid rgba(220,167,74,0.25);
+            background: rgba(5,4,2,0.98);
+            border-radius: 0 0 22px 22px;
+        }
+        .order-footer .order-submit-btn { position: static; margin-top: 0; flex: 1; }
+        .order-footer-price { flex: 0 0 auto; min-width: 84px; text-align: center; font-size: 0.95rem; color: #ccc; line-height: 1.3; }
+        .order-footer-price .glow-sweep-text { font-size: 1.1rem; }
+        .order-footer-price .price-strike { display: block; text-decoration: line-through; color: #888; font-size: 0.78rem; }
+        .order-footer-price .coupon-badge { display: block; font-size: 0.65rem; color: #4cd964; margin-top: 2px; }
+        .order-footer-price .price-breakdown, .cart-drawer-footer-price .price-breakdown, .purchase-bar-price .price-breakdown {
+            display: block; font-size: 0.68rem; color: #999; margin-top: 2px;
+        }
+
+        .order-section-label {
+            font-size: 1.05rem; color: var(--gold); margin: 22px 0 12px 0; font-weight: 800;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .order-section-label:first-child { margin-top: 0; }
+
+        /* Type toggle (تقسيم / العبوة الكاملة) */
+        .type-toggle-row { display: flex; gap: 10px; }
+        .type-pill {
+            flex: 1; padding: 14px 10px; border-radius: 14px; text-align: center; cursor: pointer;
+            background: linear-gradient(145deg, rgba(30,25,15,0.9), rgba(10,8,5,0.95));
+            border: 1px solid rgba(220,167,74,0.35); color: #ccc; font-weight: 700; font-size: 0.98rem;
+        }
+        .type-pill.selected {
+            border-color: var(--gold); color: #fff;
+            box-shadow: 0 0 22px rgba(220,167,74,0.45), inset 0 0 12px rgba(220,167,74,0.15);
+            background: linear-gradient(145deg, rgba(60,45,20,0.95), rgba(20,15,8,0.98));
+        }
+
+        /* Delivery price hint — shown once wilaya + delivery type are both picked */
+        .delivery-price-note {
+            text-align: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+            font-size: 0.9rem; font-weight: 700; color: var(--gold);
+            background: rgba(220,167,74,0.08); border: 1px solid rgba(220,167,74,0.3);
+        }
+        .delivery-price-note:empty { display: none; padding: 0; border: none; margin-top: 0; }
+        .delivery-price-note--pending { color: #ddd; font-weight: 600; font-size: 0.85rem; }
+
+        /* Decant bottle-size picker */
+        .sizes-instruction { text-align: center; color: #aaa; font-size: 0.9rem; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .sizes-instruction .arrow-bounce { animation: bounce 1.6s infinite ease-in-out; font-size: 1.1rem; }
+        .sizes-row { display: flex; align-items: flex-start; justify-content: center; gap: 18px; margin-top: 14px; }
+        .size-bottle-card {
+            display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer;
+            transform: scale(0.96); transition: transform 0.3s var(--ios-ease);
+        }
+        .size-bottle-card.selected { transform: scale(1.06); }
+        /* Fixed-height crop window: bottles are big & noticeable, but only the top
+           portion (cap + shoulder) shows — the rest fades into the section below. */
+        .bottle-visual-crop {
+            position: relative; width: 100%; height: 150px; overflow: hidden;
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+        .bottle-visual-crop svg { flex-shrink: 0; transition: opacity 0.25s ease, filter 0.25s ease, transform 0.25s ease; }
+        .bottle-visual-crop::after {
+            content: ''; position: absolute; left: -8px; right: -8px; bottom: 0; height: 50%;
+            background: linear-gradient(to bottom, rgba(12,9,5,0) 0%, rgba(12,9,5,0.7) 60%, #0c0905 100%);
+            pointer-events: none;
+        }
+        /* Only the bottle graphic itself dims/blurs when NOT selected — labels & price stay fully readable */
+        .size-bottle-card:not(.selected) .bottle-visual-crop svg { opacity: 0.42; filter: grayscale(0.4) blur(0.5px); transform: translateY(2px) scale(0.96); }
+        .size-bottle-card.selected .bottle-visual-crop svg { opacity: 1; filter: drop-shadow(0 0 16px rgba(220,167,74,0.6)); transform: translateY(-4px) scale(1.04); }
+        .size-label-badge {
+            font-size: 0.98rem; font-weight: 800; color: #eee; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 5px 16px;
+        }
+        .size-bottle-card.selected .size-label-badge { color: #000; background: var(--gold); border-color: var(--gold); box-shadow: 0 0 14px rgba(220,167,74,0.5); }
+        .size-price { font-size: 0.85rem; color: #ccc; }
+        .size-bottle-card.selected .size-price { color: var(--gold); font-weight: 700; }
+
+        /* Full bottle picker — floating presentation (this option isn't always available) */
+        .full-bottle-wrap { display: flex; flex-direction: column; align-items: center; margin-top: 18px; position: relative; }
+        .full-bottle-badge {
+            font-size: 0.8rem; color: var(--gold); border: 1px solid rgba(220,167,74,0.4);
+            background: rgba(220,167,74,0.08); padding: 3px 12px; border-radius: 20px; margin-bottom: 14px;
+        }
+        .full-bottle-floater { position: relative; display: flex; justify-content: center; }
+        .full-bottle-floater::after {
+            content: ''; position: absolute; bottom: -6px; left: 50%; width: 90px; height: 16px;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%);
+            transform: translateX(-50%); animation: floatShadow 3.2s ease-in-out infinite;
+        }
+        .full-bottle-wrap img {
+            height: 240px; object-fit: contain; cursor: pointer;
+            filter: drop-shadow(0 20px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 24px rgba(220,167,74,0.35));
+            animation: floatBottle 3.2s ease-in-out infinite;
+        }
+        @keyframes floatBottle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-14px); }
+        }
+        @keyframes floatShadow {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.55; }
+            50% { transform: translateX(-50%) scale(0.75); opacity: 0.3; }
+        }
+        .full-bottle-price { margin-top: 14px; color: var(--gold); font-weight: 700; }
+
+        /* One-time shine sweep across the bottle when the user taps "العبوة الكاملة" */
+        .full-bottle-shine-wrap { position: relative; overflow: hidden; border-radius: 18px; padding: 22px 14px 32px 14px; margin: -22px -14px -32px -14px; }
+        .full-bottle-shine-wrap::before {
+            content: ''; position: absolute; top: 0; left: -60%; width: 45%; height: 100%;
+            background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.75) 50%, transparent 100%);
+            transform: skewX(-18deg); opacity: 0; pointer-events: none;
+        }
+        .full-bottle-shine-wrap.shine::before { animation: bottleShineSweep 1.1s ease-in-out; }
+        @keyframes bottleShineSweep {
+            0%   { left: -60%; opacity: 0; }
+            15%  { opacity: 0.9; }
+            55%  { opacity: 0.9; }
+            100% { left: 130%; opacity: 0; }
+        }
+        /* After the shine, the option settles into a locked "coming soon" state */
+        .full-bottle-wrap.coming-soon img { animation: none; }
+        .full-bottle-wrap.coming-soon .full-bottle-floater {
+            transition: filter 1s var(--ios-ease-soft), opacity 1s var(--ios-ease-soft);
+        }
+        .full-bottle-wrap.coming-soon.locked .full-bottle-floater {
+            filter: blur(4px) grayscale(0.5) brightness(0.55);
+            opacity: 0.6;
+        }
+        .coming-soon-badge {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(5,4,2,0.85); border: 1px solid var(--gold); color: var(--gold);
+            font-weight: 800; font-size: 1rem; padding: 10px 20px; border-radius: 30px;
+            white-space: nowrap; opacity: 0; pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: opacity 0.8s var(--ios-ease-soft) 0.5s, transform 0.8s var(--ios-pop) 0.5s;
+        }
+        .full-bottle-wrap.coming-soon.locked .coming-soon-badge {
+            opacity: 1; transform: translate(-50%, -50%) scale(1);
+        }
+        .type-pill.locked-pill { opacity: 0.75; }
+
+        .choice-banner { text-align: center; margin: 18px 0 6px 0; min-height: 34px; }
+
+        /* Form fields */
+        .order-field { margin-bottom: 16px; }
+        .order-field label { display: block; font-size: 0.9rem; color: #bbb; margin-bottom: 7px; }
+        .order-field input[type="text"], .order-field input[type="tel"], .order-field textarea {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; padding: 13px 14px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 1rem;
+            outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .order-field input:focus, .order-field textarea:focus {
+            border-color: var(--gold); box-shadow: 0 0 0 3px rgba(220,167,74,0.18);
+        }
+        .order-field textarea { resize: vertical; min-height: 80px; }
+
+        /* Searchable combobox */
+        .combo-wrap { position: relative; }
+        .combo-wrap input[disabled] { opacity: 0.45; cursor: not-allowed; }
+        /* "Blacked out" state — baladiya field when office/Stop-Desk delivery is chosen (not required) */
+        .field-blacked-out input {
+            background: #000 !important; color: #555 !important;
+            border-color: #1a1a1a !important; opacity: 1 !important;
+            text-align: center; font-size: 0.85rem;
+        }
+        .field-blacked-out label { color: #555; }
+        .combo-list {
+            position: absolute; top: calc(100% + 6px); left: 0; right: 0; max-height: 260px; overflow-y: auto;
+            background: #17130c; border: 1px solid rgba(220,167,74,0.4); border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7); z-index: 50; display: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .combo-list.open { display: block; animation: fadeIn 0.25s var(--ios-ease); }
+        .combo-item { padding: 11px 14px; color: #ddd; cursor: pointer; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .combo-item:last-child { border-bottom: none; }
+        .combo-item:hover, .combo-item:active { background: rgba(220,167,74,0.18); color: #fff; }
+        .combo-empty { padding: 14px; color: #777; text-align: center; font-size: 0.9rem; }
+
+        .order-submit-btn {
+            position: sticky; bottom: 0; width: 100%; margin-top: 10px;
+            background: linear-gradient(135deg, var(--gold), #b3802e); color: #000; border: none;
+            border-radius: 14px; padding: 16px; font-family: 'Cairo', sans-serif; font-size: 1.15rem; font-weight: 800;
+            cursor: pointer; box-shadow: 0 10px 25px rgba(220,167,74,0.35);
+        }
+        .order-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+        .order-toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: #17130c; border: 1px solid var(--gold); color: #fff; padding: 14px 22px;
+            border-radius: 14px; z-index: 3000; opacity: 0; pointer-events: none; font-size: 0.95rem;
+            transition: all 0.4s var(--ios-ease); text-align: center; max-width: 90vw;
+            backdrop-filter: blur(10px);
+        }
+        .order-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Note pyramid chip visuals */
+        .notes-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .note-chip {
+            display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(220,167,74,0.3); border-radius: 20px; padding: 5px 11px 5px 7px;
+            font-size: 0.82rem; color: #eee;
+        }
+        .note-chip .chip-icon-wrap {
+            width: 20px; height: 20px; border-radius: 50%; background: rgba(220,167,74,0.15);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .note-chip .chip-icon-wrap svg { width: 11px; height: 11px; fill: var(--gold); }
+
+        @media (max-width: 480px) {
+            #order-overlay { width: 94vw; height: 88vh; }
+            .order-header-title h3 { font-size: 1.25rem; }
+            .sizes-row { gap: 10px; }
+            .full-bottle-wrap img { height: 190px; }
+            .order-scroll { padding: 16px 12px 20px 12px; }
+        }
+        @media (max-width: 340px) {
+            .sizes-row { gap: 6px; }
+        }
+
+        /* ============ CART FAB + FLY ANIMATION + DRAWER ============ */
+        #cart-fab {
+            position: fixed; top: 16px; left: 16px; z-index: 150;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: rgba(10,8,5,0.85); border: 1px solid rgba(220,167,74,0.55);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+            opacity: 0; transform: scale(0.7); transition: opacity 0.7s var(--ios-ease), transform 0.6s var(--ios-pop), z-index 0s;
+            padding-top: env(safe-area-inset-top);
+        }
+        #cart-fab.visible { opacity: 1; transform: scale(1); }
+        /* While something is flying toward it, the FAB must render above any open
+           modal/overlay — otherwise the item appears to vanish behind the popup
+           instead of landing in a visible cart icon. */
+        #cart-fab.receiving { z-index: 3200; }
+        #cart-fab svg { width: 22px; height: 22px; fill: var(--gold); position: relative; z-index: 2; transition: transform 0.6s var(--ios-pop); }
+        #cart-fab.bump svg { animation: cartIconPop 0.9s var(--ios-pop); }
+        #cart-fab.bump { animation: cartBump 0.9s var(--ios-pop); }
+        @keyframes cartBump {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.32); }
+            55%  { transform: scale(0.94); }
+            75%  { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes cartIconPop {
+            0%   { transform: rotate(0deg) scale(1); }
+            25%  { transform: rotate(-10deg) scale(1.15); }
+            55%  { transform: rotate(8deg) scale(1.05); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        /* Expanding ring burst that plays on landing, guiding the eye to the FAB */
+        .cart-fab-ring {
+            position: absolute; inset: -1px; border-radius: 50%;
+            border: 2px solid var(--gold); opacity: 0; pointer-events: none;
+        }
+        #cart-fab.bump .cart-fab-ring { animation: cartRingBurst 0.9s var(--ios-ease-soft); }
+        @keyframes cartRingBurst {
+            0%   { transform: scale(0.7); opacity: 0.9; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .cart-badge {
+            position: absolute; top: -4px; right: -4px; min-width: 19px; height: 19px; border-radius: 10px;
+            background: var(--gold); color: #000; font-size: 0.68rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; padding: 0 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5); transform: scale(0); transition: transform 0.45s var(--ios-pop);
+            z-index: 3;
+        }
+        .cart-badge.show { transform: scale(1); }
+        .cart-badge.bump-badge { animation: badgePop 0.6s var(--ios-pop); }
+        @keyframes badgePop { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
+
+        .fly-to-cart {
+            position: fixed; z-index: 3100; pointer-events: none;
+            --dx: 0px; --dy: 0px; --arc: -80px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .fly-to-cart.flying {
+            animation: flyToCartArc 1.35s cubic-bezier(0.4, 0, 0.15, 1) forwards;
+        }
+        @keyframes flyToCartArc {
+            0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+            18%  { transform: translate(calc(var(--dx) * 0.06), calc(var(--dy) * 0.02 + var(--arc) * 0.12)) scale(1.08) rotate(-4deg); opacity: 1; }
+            55%  { transform: translate(calc(var(--dx) * 0.58), calc(var(--dy) * 0.34 + var(--arc))) scale(0.68) rotate(10deg); opacity: 1; }
+            85%  { transform: translate(calc(var(--dx) * 0.92), calc(var(--dy) * 0.85)) scale(0.32) rotate(18deg); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.08) rotate(24deg); opacity: 0; }
+        }
+        .fly-to-cart img, .fly-to-cart svg {
+            width: 46px; height: 46px; object-fit: contain; border-radius: 10px;
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.65)) drop-shadow(0 0 16px rgba(220,167,74,0.5));
+        }
+        /* Soft glowing trail dot that fades slightly behind the flying item,
+           reinforcing the sense of motion toward the cart. */
+        .fly-to-cart::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 46px; height: 46px;
+            transform: translate(-50%, -50%); border-radius: 50%;
+            background: radial-gradient(circle, rgba(220,167,74,0.35) 0%, transparent 70%);
+            filter: blur(4px); z-index: -1;
+        }
+        .fly-to-cart-label {
+            margin-top: 6px; font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 0.95rem;
+            color: var(--gold); text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+            opacity: 0; animation: flyLabelFade 1.35s ease forwards;
+        }
+        @keyframes flyLabelFade {
+            0%   { opacity: 0; transform: translateY(4px); }
+            15%  { opacity: 1; transform: translateY(0); }
+            70%  { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-6px); }
+        }
+
+        #cart-drawer-backdrop {
+            position: fixed; inset: 0; z-index: 2199; background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #cart-drawer-backdrop.active { opacity: 1; pointer-events: all; }
+        #cart-drawer {
+            position: fixed; z-index: 2200; top: 50%; left: 50%;
+            width: min(90vw, 400px); max-height: 74vh;
+            background: linear-gradient(180deg, #1a150e 0%, #050402 100%);
+            border: 1px solid rgba(220,167,74,0.6); border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.95);
+            transform: translate(-50%, -50%) scale(0.9); opacity: 0;
+            transition: transform 0.6s var(--ios-pop), opacity 0.42s ease-out;
+            display: none; flex-direction: column; overflow: hidden;
+        }
+        #cart-drawer.active { display: flex; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .cart-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 12px 18px; border-bottom: 1px solid rgba(220,167,74,0.25); }
+        .cart-drawer-header h3 { font-family: 'NASKHFONT', serif; font-size: 1.4rem; color: #fff; }
+        .cart-drawer-list { flex: 1; overflow-y: auto; padding: 10px 16px; }
+        .cart-drawer-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .cart-drawer-item img { width: 46px; height: 46px; object-fit: contain; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; flex-shrink: 0; }
+        .cart-drawer-item-info { flex: 1; min-width: 0; }
+        .cart-drawer-item-name { font-size: 0.92rem; color: #eee; margin-bottom: 8px; }
+        .cart-drawer-item-qty { font-size: 0.85rem; color: var(--gold); font-weight: 700; }
+        .cart-size-chip-row { display: flex; gap: 6px; }
+        .cart-size-chip {
+            font-size: 0.78rem; color: #ccc; padding: 4px 10px; border-radius: 20px; cursor: pointer;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+        }
+        .cart-size-chip.selected { color: #000; background: var(--gold); border-color: var(--gold); font-weight: 700; }
+        .cart-drawer-item-remove { color: #888; cursor: pointer; font-size: 1.2rem; padding: 4px 8px; flex-shrink: 0; }
+        .cart-drawer-empty { text-align: center; color: #888; padding: 30px 10px; }
+        .cart-drawer-footer { padding: 14px 18px; border-top: 1px solid rgba(220,167,74,0.25); }
+        .cart-drawer-footer .order-submit-btn { position: static; margin-top: 0; }
+        .cart-drawer-footer-price { text-align: center; margin-bottom: 10px; font-size: 0.95rem; color: #ccc; }
+        .cart-drawer-footer-price .glow-sweep-text { font-size: 1.15rem; }
+        .cart-drawer-footer-price .price-strike { display: inline-block; text-decoration: line-through; color: #888; font-size: 0.8rem; margin-left: 6px; }
+        .cart-drawer-footer-price .coupon-badge { display: block; font-size: 0.72rem; color: #4cd964; margin-top: 3px; }
+
+        /* Cart contents summary shown at the top of the cart checkout form */
+        .cart-order-items { display: flex; flex-direction: column; gap: 10px; }
+        .cart-order-item-row {
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+        }
+        .cart-order-item-row img { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+        .cart-order-item-text { font-size: 0.92rem; color: #eee; flex: 1; }
+        .cart-order-item-qty { color: var(--gold); font-weight: 700; }
+
+        /* ============ iOS-STYLE CONFIRMATION ALERT ============ */
+        #ios-alert-backdrop {
+            position: fixed; inset: 0; z-index: 3100; background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+        }
+        #ios-alert-backdrop.active { opacity: 1; pointer-events: all; }
+        #ios-alert {
+            position: fixed; z-index: 3101; top: 50%; left: 50%;
+            width: min(84vw, 300px);
+            background: rgba(28, 24, 16, 0.88);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(220,167,74,0.35);
+            border-radius: 18px; text-align: center; overflow: hidden;
+            transform: translate(-50%, -50%) scale(0.7); opacity: 0;
+            transition: transform 0.55s var(--ios-pop), opacity 0.4s ease-out;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+        #ios-alert.active { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .ios-alert-icon {
+            width: 56px; height: 56px; border-radius: 50%; margin: 22px auto 10px auto;
+            background: rgba(76, 217, 100, 0.15); border: 2px solid #4cd964;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .ios-alert-icon svg { width: 28px; height: 28px; }
+        .ios-alert-title { font-size: 1.08rem; font-weight: 800; color: #fff; padding: 0 18px; margin-bottom: 6px; }
+        .ios-alert-msg { font-size: 0.88rem; color: #bbb; padding: 0 18px 18px 18px; line-height: 1.6; }
+        .ios-alert-btn {
+            width: 100%; padding: 13px; background: none; border: none; border-top: 1px solid rgba(255,255,255,0.12);
+            color: var(--gold); font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer;
+        }
+        .ios-alert-btn:active { background: rgba(220,167,74,0.1); }
+
+        @media (max-width: 768px) {
+            .top-text { font-size: 3rem; top: 18%; }
+            .alt-text { font-size: 1.8rem; }
+            .bottle-img { height: 200px; }
+            .perfume-card { height: 320px; }
+        }
+        @media (max-width: 480px) {
+            .top-text { font-size: 2.8rem; margin-top: 50px;}
+            .bottle-img-wrapper { margin-top: -50px; }
+            .modal-title { font-size: 2rem; }
+            .modal-bottle { height: 130px; }
+            .tab-btn { font-size: 0.95rem; padding: 10px 8px; }
+            .block-tier { padding: 10px 15px; }
+        }
+
+        /* ============ EXTRA RESPONSIVE POLISH (phones / small devices) ============ */
+        .cards-container { width: 94%; }
+        @media (max-width: 600px) {
+            .cards-container { width: 96%; gap: 60px; }
+            .perfume-card { height: 300px; padding: 8px 10px 16px 10px; border-radius: 16px; }
+            .bottle-img { height: 175px; }
+            .bottle-name { font-size: 0.95rem; }
+            .section-title { font-size: 2.4rem; margin-bottom: 60px; }
+            .discover-text { font-size: 2.6rem; }
+            .order-text { font-size: 1.4rem; }
+            .learn-more-text { font-size: 1.5rem; }
+            .alt-arrow svg { width: 60px; height: 20px; }
+        }
+        @media (max-width: 400px) {
+            .top-text { font-size: 2.6rem !important; }
+            .discover-text { font-size: 2.1rem; }
+            .order-text { font-size: 1.15rem; }
+            .perfume-card { height: 280px; }
+            .bottle-img { height: 150px; }
+            .bottle-name { font-size: 0.82rem; }
+            .arrow-col { width: 22%; margin-top: 15px; }
+            .alt-text { font-size: 1.3rem; margin-bottom: -4px; }
+            .alt-arrow svg { width: 46px; height: 16px; }
+            .modal-title { font-size: 1.6rem; }
+            .modal-header { padding: 34px 14px 12px 14px; }
+            .detail-tags { padding: 0 14px 12px 14px; flex-wrap: wrap; }
+            .tabs-container { gap: 6px; padding: 0 10px; }
+            .tab-content { padding: 18px 14px; font-size: 0.95rem; }
+            .purchase-bar { padding: 12px 14px; }
+            .btn-order { font-size: 1.05rem; }
+        }
+        @media (max-width: 340px) {
+            .top-text { font-size: 2.2rem !important; }
+            .cards-container { gap: 46px; }
+            .perfume-card { height: 260px; }
+            .bottle-img { height: 130px; }
+        }
+        @media (max-height: 650px) and (max-width: 480px) {
+            .top-text { top: 16%; }
+            .bottles-stage { bottom: 20%; height: 44vh; }
+        }
+        @media (max-width: 480px) {
+        .bottles-stage {
+            transform: translateY(0vh) scale(0.75); 
+            transform-origin: center center;
+            
+        }
+        #bottle-front{
+            height: 60vh;
+            z-index: 12;
+        }
+        .bottom-content{
+
+            transform: translateY(50vh);
+        }
+
+        .discover-text{
+            font-size: 60px;
+        }
+        .order-text{
+            font-size: 40px;
+            font-family: 'NASKHFONT', serif;
+        }
+        .top-text{
+            font-size: 70px;
+            z-index: 0;
+        }
+}
+        /* Respect iPhone safe areas */
+        @supports (padding: max(0px)) {
+            .top-glass-bar { padding-top: env(safe-area-inset-top); }
+            .bottom-content { padding-bottom: env(safe-area-inset-bottom); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header & Hero remains identical -->
+    <div class="top-glass-bar" id="top-glass-bar"></div>
+    <div class="logo-wrap" id="logo-wrap"><img src="logo.png" alt="الديوان"></div>
+
+    <div class="store-container" id="hero-section">
+        <div class="top-text fade-in" id="top-text">مجموعتنا</div>
+        <div class="bottles-stage">
+            <img src="Creed Black Aventus replacer (Assaf Frankel Black).png" class="bottle b-back left" id="bottle-back-l">
+            <img src="CREED SELVER replacement (Frankel Silver).png" class="bottle b-back right" id="bottle-back-r">
+            <img src="Bvlgari Le Gemme Tygar replacer Athar  .png" class="bottle b-mid left" id="bottle-mid-l">
+            <img src="Eurba Pura replacement (Emeroled Sou)l.png" class="bottle b-mid right" id="bottle-mid-r">
+            <img src="tilia marc antoine barrois Replacer Mihwar Hirsh .png" class="bottle b-front" id="bottle-front">
+        </div>
+        <div class="bottom-content fade-in" id="bottom-content">
+            <h1 class="discover-text">إسكتشف</h1>
+            <h2 class="order-text">واطلب الأن!</h2>
+            <div class="swipe-up">
+                <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+                إسحب للأعلى
+            </div>
+        </div>
+    </div>
+
+    <!-- Products List -->
+    <div class="products-section" id="products-section">
+        <h2 class="section-title reveal-element">إختر عطرك</h2>
+        <div class="cards-container" id="dynamic-cards-container">
+            <!-- Basic Front Cards Injected via JS -->
+        </div>
+    </div>
+
+    <!-- Bottom contact footer — reached when the user scrolls to the end of the page -->
+    <div class="site-footer-credit">
+        <div class="ftc-line1">صُنع بواسطة <span class="glow-sweep-text" style="font-size:1.4rem;">Jalil</span></div>
+        <div class="ftc-msg">هل تريد متجرًا إلكترونيًا احترافيًا بأسعار جيدة؟ تواصل معي مباشرة:</div>
+        <div class="ftc-contact">
+            <a href="tel:+213542047428">📞 0542047428</a>
+            <a href="mailto:anaj20b1@gmail.com">✉️ anaj20b1@gmail.com</a>
+            <a href="https://github.com/ajbx1" target="_blank" rel="noopener">💻 github.com/ajbx1</a>
+        </div>
+        <div class="ftc-line1" style="font-size:1.1rem; margin-top:22px;">تابعونا</div>
+        <div class="ftc-social" id="ftc-social"><!-- injected via JS (SOCIAL_LINKS + icons) --></div>
+    </div>
+
+    <!-- GLOBAL MODAL OVERLAY -->
+    <div id="modal-backdrop" onclick="closeModal()"></div>
+    <div id="perfume-modal">
+        <!-- Content injected dynamically via JS on click -->
+    </div>
+
+    <!-- ORDER FLOW OVERLAY -->
+    <div id="order-overlay-backdrop-blur"></div>
+    <div id="order-overlay">
+        <!-- Content injected dynamically via JS -->
+    </div>
+    <div id="order-toast" class="order-toast"></div>
+
+    <!-- CART -->
+    <div id="cart-fab" onclick="toggleCartDrawer()">
+        <span class="cart-fab-ring" id="cart-fab-ring"></span>
+        <svg viewBox="0 0 24 24"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/></svg>
+        <span class="cart-badge" id="cart-badge">0</span>
+    </div>
+    <div id="cart-drawer-backdrop" onclick="toggleCartDrawer()"></div>
+    <div id="cart-drawer"></div>
+
+    <!-- Site credit badge (fixed bottom-right corner) -->
+    <div class="site-credit" id="site-credit" onclick="document.querySelector('.site-footer-credit').scrollIntoView({behavior:'smooth', block:'start'})">
+        <span class="site-credit-text" id="site-credit-text">made by Jalil .</span>
+    </div>
+
+    <!-- iOS-STYLE CONFIRMATION ALERT -->
+    <div id="ios-alert-backdrop"></div>
+    <div id="ios-alert"></div>
+
+    <script>
+        // Social media links — used for the footer icons and for the
+        // "no delivery coverage" popup.
+        const SOCIAL_LINKS = {
+            facebook: "https://web.facebook.com/people/%D8%A7%D9%84%D8%AF%D9%8A%D9%88%D8%A7%D9%86-%D9%84%D9%84%D8%B9%D8%B7%D9%88%D8%B1/61593552257070/?sk=directory_basic_info",
+            tiktok: "https://www.tiktok.com/@aldiwan34?is_from_webapp=1&sender_device=pc"
+        };
+
+        // Icons
+        const icons = {
+            arrow: `<svg viewBox="0 0 100 24"><path d="M5,12 L20,4 L20,20 Z" fill="#ffffff"/><line x1="18" y1="12" x2="100" y2="12" stroke="#ffffff" stroke-width="2"/><polygon points="40,12 45,7 50,12 45,17" fill="#ffffff"/><polygon points="65,12 70,7 75,12 70,17" fill="#ffffff"/><polygon points="90,12 95,7 100,12 95,17" fill="#ffffff"/></svg>`,
+            cart: `<svg viewBox="0 0 24 24"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/></svg>`,
+            citrus: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 3v9l6.5-6.5M12 12l8.5 3" stroke="currentColor" stroke-width="2"/></svg>`,
+            wood: `<svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM10 3v18M14 3v18" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
+            flower: `<svg viewBox="0 0 24 24"><path d="M12 2c-3 0-5 3-5 6 0 2.5 3 4 5 4s5-1.5 5-4c0-3-2-6-5-6zm0 10c-1.5 0-4 1.5-4 4 0 3 4 6 4 6s4-3 4-6c0-2.5-2.5-4-4-4z" fill="currentColor"/></svg>`,
+            musk: `<svg viewBox="0 0 24 24"><path d="M12 21C6.477 21 2 16.523 2 11S6.477 1 12 1s10 4.477 10 10-4.477 10-10 10zm0-18C7.589 3 4 6.589 4 11s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 5c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3 1.343-3 3-3z" fill="currentColor"/></svg>`,
+            leaf: `<svg viewBox="0 0 24 24"><path d="M12 2s-6 4-6 10c0 4.5 4 8 6 10 2-2 6-5.5 6-10 0-6-6-10-6-10zm0 18v-8" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
+            fruit: `<svg viewBox="0 0 24 24"><path d="M12 6C8 6 5 9 5 13s4 8 7 8 7-4 7-8-3-7-7-7zm0-4c1 0 2 1 2 2h-4c0-1 1-2 2-2z" fill="currentColor"/></svg>`,
+            spice: `<svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-5-6.5 5 2-7.5L2 9h7z" fill="currentColor"/></svg>`,
+            season: `<svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M4.9 19.1L19.1 4.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+            clock: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+            facebook: `<svg viewBox="0 0 24 24"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.24 10.44 22v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06z" fill="currentColor"/></svg>`,
+            tiktok: `<svg viewBox="0 0 24 24"><path d="M16.5 2h-3v13.6a2.9 2.9 0 1 1-2.3-2.84V9.65a5.9 5.9 0 1 0 5.3 5.87V8.2a7.6 7.6 0 0 0 4.5 1.46V6.6A4.6 4.6 0 0 1 16.5 2z" fill="currentColor"/></svg>`
+        };
+
+        // Enriched Data with detailed descriptions, season, and longevity
+        // =====================================================================
+        // PRODUCT PHOTOS — put ALL your image filenames here, in one place.
+        // Just fill in the "imgO" (original brand's bottle) and "imgC" (your
+        // own product's bottle) values below with your actual file names,
+        // then upload those image files into the SAME folder as this index.html
+        // file (or update the path here, e.g. "images/my-photo.png" if you put
+        // them in a subfolder).
+        //
+        // TIP: avoid spaces and parentheses in filenames (they cause broken
+        // images on GitHub Pages) — rename your photos to something simple like
+        // "p1-clone.png", "p1-original.png", etc.
+        // =====================================================================
+        const PRODUCT_IMAGES = {
+            1: { imgO: "tilia marc antoine barrois Original .png ", imgC: "tilia marc antoine barrois Replacer Mihwar Hirsh .png" }, // تيليا مارك انطوان باروا / محور هيرش
+            2: { imgO: "Erba pura Original.png",            imgC: "Eurba Pura replacement (Emeroled Sou)l.png" },            // إيربا بورا / إيميريلد صول
+            3: { imgO: "bois imperial Original .png",                                    imgC: "bois imperial Replacer hersh Lahab .png" },                                    // بوا إمبريال / هيرش لهب
+            4: { imgO: "Bvlgari Le Gemme Tygar replacer Athar  .png",           imgC: "Bvlgari Le Gemme Tygar Original .png" },           // بولغاري لي جيم تايغار / أثر دايروز
+            5: { imgO: "Creed Black Aventus original.png",imgC: "Creed Black Aventus replacer (Assaf Frankel Black).png" },// كريد أفينتوس بلاك / عساف فرانكل بلاك
+            6: { imgO: "ORIGINAL CREED SILVER MOUNTAIN WATER.png",         imgC: "CREED SELVER replacement (Frankel Silver).png" },         // كريد سيلفر / عساف فرانكل سيلفر
+            7: { imgO: "la nuit de l'homme Original.png",                                  imgC: "la nuit de l'homme Replacer (Wild Colt).png" },                                  // لا نوي دي لوم / وايلد كولتلا بوس
+            8: { imgO: "Nishane Original .png",                                  imgC: "Nishane Replacement (AURA ASSAF).png" },                                        // نيشان هسيفات / أورا عساف
+        };
+
+        const perfumesData = [
+            {
+                id: 1, orig: "تيليا مارك انطوان باروا", clone: "محور هيرش", season: "زهري / حلو", longevity: "ثبات ممتاز (8+ ساعات)",
+                desc: "يفتتح عطر محور هيرش بهالة مشرقة ومبهجة، مستوحياً إبداعه من تحفة 'تيليا'. يتألق بلمسات زهر الزيزفون التي تعانق نعومة رقيب الشمس، ليخلق طابعاً شمسياً ذهبياً يبعث على التفاؤل. يستقر العطر على قاعدة خشبية لطيفة من نجيل الهند والأمبروكسان، ليمنحك هالة جذابة تدوم طويلاً وتترك أثراً سحرياً في كل مكان.",
+                accords: [ { name: "زهري أصفر", color: "#f1c40f", w: "100%", text: "#000" }, { name: "حلو & بودري", color: "#e74c3c", w: "80%" }, { name: "خشبي مسكي", color: "#8e44ad", w: "65%" } ],
+                pyramid: { t: "زهر الزيزفون، مكنسة", tIcon: icons.flower, m: "رقيب الشمس، ياسمين سامباك", mIcon: icons.flower, b: "نجيل الهند، أمبروكسان", bIcon: icons.wood }, price: {p10:1600,p20:3200,p30:4800,full:"قريباً"}, gender: "unisex"
+            },
+            {
+                id: 2, orig: "إيربا بورا", clone: "إيميريلد صول", season: "فاكهي منعش", longevity: "فوحان أسطوري",
+                desc: "عطر إيميريلد صول هو سيمفونية فاكهية متفجرة تعيد إحياء روح 'إيربا بورا'. يبدأ بانفجار حمضي لاذع من البرتقال والليمون، قبل أن يغوص في قلب مليء بالفواكه الاستوائية الحلوة واللذيذة. في القاعدة، يتوازن هذا الانفجار الفاكهي مع دفء الفانيليا والمسك الأبيض، ليعطيك عطراً صاخباً وممتعاً يلفت جميع الأنظار.",
+                accords: [ { name: "فاكهي استوائي", color: "#9b59b6", w: "100%" }, { name: "حمضيات", color: "#f1c40f", w: "85%", text: "#000" }, { name: "مسكي فانيلي", color: "#ecf0f1", w: "70%", text: "#000" } ],
+                pyramid: { t: "برتقال سيسيلي، برغموت", tIcon: icons.citrus, m: "فواكه مشكلة استوائية", mIcon: icons.fruit, b: "مسك أبيض، فانيليا مدغشقر", bIcon: icons.musk }, price: {p10:800,p20:1600,p30:2400,full:"قريباً"}, gender: "unisex"
+            },
+            {
+                id: 3, orig: "بوا إمبريال", clone: "هيرش لهب", season: "فخم / خشبي", longevity: "ثبات وفوحان عالي",
+                desc: "يجسد هيرش لهب الأناقة العصرية بامتياز. مستوحى من نقاء 'بوا إمبريال'، يقدم هذا العطر تركيبة خشبية أروماتيكية شديدة النقاء والانتعاش. يبرز فيه فلفل تيموت الحار مع الريحان، مدعوماً بجزيء الأكيجالاوود الذي يعطي طابعاً خشبياً نظيفاً وعميقاً. عطر رسمي، حاد، ومميز يناسب الشخصية القيادية.",
+                accords: [ { name: "أخشاب نظيفة", color: "#d35400", w: "100%" }, { name: "توابل منعشة", color: "#27ae60", w: "75%" }, { name: "أروماتك عشبي", color: "#2980b9", w: "60%" } ],
+                pyramid: { t: "ريحان، فلفل تيموت", tIcon: icons.leaf, m: "أكيجالاوود، نجيل الهند", mIcon: icons.wood, b: "أمبروكسان، باتشولي", bIcon: icons.wood }, price: {p10:1450,p20:2900,p30:4300,full:"قريباً"}, gender: "unisex"
+            },
+            {
+                id: 4, orig: "بولغاري لي جيم تايغار", clone: "أثر دايروز", season: "صيفي", longevity: "حامضي منعش",
+                desc: "أثر دايروز هو انعكاس للفخامة الإيطالية بلمسة شرقية، كبديل رائع لعطر تايغار الأيقوني. يعتمد بشكل أساسي على التضاد الساحر بين الجريب فروت الحمضي اللاذع والمشرق، وبين قاعدة عميقة جداً من الأخشاب والأمبروكسان الجذاب. تركيبة بسيطة لكنها تقدم أداءً مبهراً وتأثيراً ذكورياً طاغياً.",
+                accords: [ { name: "حمضيات مشهية", color: "#f39c12", w: "100%" }, { name: "أمبروكسان قوي", color: "#34495e", w: "85%" }, { name: "أخشاب دافئة", color: "#8e44ad", w: "70%" } ],
+                pyramid: { t: "جريب فروت", tIcon: icons.citrus, m: "ملاحظات خشبية", mIcon: icons.wood, b: "أمبروكسان، عنبر", bIcon: icons.musk }, price: {p10:1450,p20:2900,p30:4300,full:"قريباً"}, gender: "male"
+            },
+            {
+                id: 5, orig: "كريد أفينتوس بلاك", clone: "عساف فرانكل بلاك", season: "رجولي فخم", longevity: "فوحان ملكي",
+                desc: "يُعتبر عساف فرانكل بلاك رمزاً للقوة والنجاح، محاكياً عظمة وتاريخ أفينتوس. يبدأ بافتتاحية الفواكه الملكية المكونة من الأناناس الطازج والتفاح، ليندمج لاحقاً مع قلب من أخشاب البتولا المدخنة والباتشولي. المزيج المتناقض بين الانتعاش الفاكهي والدخان الخشبي يجعله العطر الرجالي الأكثر طلباً.",
+                accords: [ { name: "فاكهي غني", color: "#e67e22", w: "100%" }, { name: "خشبي مدخن", color: "#2c3e50", w: "80%" }, { name: "جلدي أروماتك", color: "#7f8c8d", w: "65%" } ],
+                pyramid: { t: "أناناس، برغموت، تفاح، كشمش", tIcon: icons.fruit, m: "أخشاب البتولا، باتشولي، ياسمين", mIcon: icons.leaf, b: "مسك، طحلب البلوط، فانيليا", bIcon: icons.wood }, price: {p10:850,p20:1700,p30:2550,full:"قريباً"}, gender: "male"
+            },
+            {
+                id: 6, orig: "كريد سيلفر", clone: "عساف فرانكل سيلفر", season: " منعش / بحري", longevity: "ثبات منعش",
+                desc: "يأخذك عساف فرانكل سيلفر في رحلة خلابة إلى جبال الألب المغطاة بالثلوج. عطر شديد النقاء والبرودة، يتمحور حول نوتة الشاي الأخضر والكشمش الأسود مع لمسات معدنية وحمضية. بديل مذهل لـ كريد سيلفر ماونتن ووتر، يعطيك إحساساً بالنظافة، الهدوء، والانتعاش المطلق في أيام الصيف الحارة.",
+                accords: [ { name: "شاي أخضر", color: "#2ecc71", w: "100%" }, { name: "حمضيات معدنية", color: "#f1c40f", w: "85%", text: "#000" }, { name: "مسكي خشبي", color: "#ecf0f1", w: "70%", text: "#000" } ],
+                pyramid: { t: "برغموت، يوسفي", tIcon: icons.citrus, m: "شاي أخضر، كشمش أسود", mIcon: icons.leaf, b: "مسك، خشب الصندل، جلبانوم", bIcon: icons.wood }, price: {p10:850,p20:1700,p30:2550,full:"قريباً"}, gender: "unisex"
+            },
+            {
+                id: 7, orig: "لا نوي دي لوم", clone: "وايلد كولتلا بوس", season: "أروماتيك / خشبي", longevity: "ثبات دافئ",
+                desc: "يحمل وايلد كولتلا بوس سحر الليل وجاذبية اللقاءات المسائية. كبديل مثالي لعطر 'لا نوي دي لوم'، يعتمد على نوتة الهيل (الكاردموم) الدافئة والمثيرة التي تمتزج بنعومة الخزامى وتستند على قاعدة من الأخشاب الداكنة. عطر رومانسي، غامض، شديد الجاذبية، ومصمم خصيصاً ليترك انطباعاً لا ينسى.",
+                accords: [ { name: "توابل دافئة", color: "#d35400", w: "100%" }, { name: "أروماتك لافندر", color: "#8e44ad", w: "80%" }, { name: "خشبي عميق", color: "#34495e", w: "65%" } ],
+                pyramid: { t: "الهيل (Cardamom)", tIcon: icons.spice, m: "خزامى (Lavender)، أرز، برغموت", mIcon: icons.flower, b: "نجيل الهند، كراوية", bIcon: icons.wood }, price: {p10:850,p20:1700,p30:2550,full:"قريباً"}, gender: "male"
+            },
+            {
+                id: 8, orig: "نيشان هسيفات", clone: "أورا عساف", season: "فاكهي / خشبي", longevity: "ثبات وفوحان نووي",
+                desc: "يُعتبر أورا عساف وحشاً صيفياً بأداء استثنائي. يتألق بنوتة الأناناس الحادة والقوية الممزوجة بالجريب فروت، ولكن سرعان ما يكشف عن قاعدة كثيفة ورجولية من طحلب البلوط والأخشاب. يحاكي أداء وجمال 'نيشان هسيفات'، مما يجعله الخيار الأول لمن يبحث عن عطر صيفي منعش يمتلك ثباتاً أسطورياً يدوم لأيام.",
+                accords: [ { name: "حمضيات فاكهية حادة", color: "#f39c12", w: "100%" }, { name: "خشبي طحلبي غني", color: "#27ae60", w: "85%" }, { name: "ترابي", color: "#7f8c8d", w: "70%" } ],
+                pyramid: { t: "أناناس، جريب فروت، برغموت", tIcon: icons.fruit, m: "خشب الأرز، باتشولي، ياسمين", mIcon: icons.leaf, b: "طحلب البلوط، أخشاب صافية", bIcon: icons.wood }, price: {p10:950,p20:1900,p30:2850,full:"قريباً"}, gender: "unisex"
+            }
+        ];
+
+        // Apply the photos declared in PRODUCT_IMAGES above onto each product,
+        // matched by id. If you add a new product, just add its id to
+        // PRODUCT_IMAGES too — no need to touch this loop.
+        perfumesData.forEach(p => {
+            const imgs = PRODUCT_IMAGES[p.id];
+            p.imgO = imgs ? imgs.imgO : 'fallback.png';
+            p.imgC = imgs ? imgs.imgC : 'fallback.png';
+        });
+
+        // 1. Render Basic Cards (Front only)
+        function renderCards() {
+            const container = document.getElementById('dynamic-cards-container');
+            let html = '';
+            
+            perfumesData.forEach((p, index) => {
+                const delay = index * 0.1;
+                html += `
+                <div class="perfume-card reveal-element" id="card-${p.id}" style="transition-delay: ${delay}s;" onclick="openModal(${p.id})">
+                    <div class="card-content-front">
+                        <div class="bottle-col">
+                            <div class="bottle-img-wrapper"><img src="${p.imgC}" class="bottle-img" onerror="this.onerror=null;this.src='fallback.png'"></div>
+                            <div class="bottle-name">${p.clone.replace(' ', '<br>')}</div>
+                        </div>
+                        <div class="arrow-col">
+                            <div class="alt-text">بديل</div>
+                            <div class="alt-arrow">${icons.arrow}</div>
+                        </div>
+                        <div class="bottle-col">
+                            <div class="bottle-img-wrapper"><img src="${p.imgO}" class="bottle-img" onerror="this.onerror=null;this.src='fallback.png'"></div>
+                            <div class="bottle-name">${p.orig.replace(' ', '<br>')}</div>
+                        </div>
+                    </div>
+                    <div class="card-action-container">
+                        <span class="learn-more-text">تعرف على العطر</span>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Accurate note -> icon matching (keyword based)
+        function noteIconFor(noteText) {
+            const t = noteText;
+            const test = (arr) => arr.some(k => t.includes(k));
+            if (test(["حمض","برغموت","ليمون","برتقال","يوسفي","جريب فروت","ليم"])) return icons.citrus;
+            if (test(["أناناس","تفاح","كشمش","فاكه","فواكه","فراولة"])) return icons.fruit;
+            if (test(["زهر","ياسمين","لافندر","خزامى","زيزفون","رقيب الشمس","ورد"])) return icons.flower;
+            if (test(["فلفل","هيل","كراوية","توابل","قرنفل","زنجبيل"])) return icons.spice;
+            if (test(["ريحان","نجيل","أوراق","طحلب","عشب"])) return icons.leaf;
+            if (test(["مسك","عنبر","أمبروكسان","فانيليا","جلد"])) return icons.musk;
+            if (test(["خشب","صندل","أرز","باتشولي","أوكيجالاوود","أكيجالاوود"])) return icons.wood;
+            return icons.leaf;
+        }
+        // NASKHFONT has no usable digit glyphs — wrap any digit run (western
+        // or eastern-Arabic) in a span that forces a font that actually draws
+        // numbers, wherever this text sits inside NASKHFONT-styled markup
+        // (prices, chosen sizes, totals). Non-numeric strings pass through untouched.
+        function numFont(value) {
+            return String(value).replace(/[0-9٠-٩]+/g, m => `<span class="num-fix">${m}</span>`);
+        }
+
+        // Who the fragrance is best suited for
+        function genderTag(g) {
+            const map = {
+                male:   { label: "رجالي",    symbol: "♂" },
+                female: { label: "نسائي",    symbol: "♀" },
+                unisex: { label: "للجنسين", symbol: "⚥" }
+            };
+            const m = map[g] || map.unisex;
+            return `<span class="gender-symbol">${m.symbol}</span> ${m.label}`;
+        }
+        function notesChipsHtml(noteString) {
+            return noteString.split(/[،,]/).map(n => n.trim()).filter(Boolean).map(n =>
+                `<div class="note-chip"><span class="chip-icon-wrap">${noteIconFor(n)}</span>${n}</div>`
+            ).join('');
+        }
+
+        // 2. Advanced Modal Logic (iOS-smooth card-to-sheet morph — no distorted 3D flip)
+        const modal = document.getElementById('perfume-modal');
+        const backdrop = document.getElementById('modal-backdrop');
+        let activeCardId = null;
+
+        window.openModal = function(id) {
+            if(activeCardId) return; // Prevent double clicks
+            activeCardId = id;
+            
+            const p = perfumesData.find(x => x.id === id);
+            const cardEl = document.getElementById(`card-${id}`);
+            const rect = cardEl.getBoundingClientRect();
+            
+            // Build Modal HTML
+            let accordsHtml = '';
+            p.accords.forEach(a => {
+                let textColor = a.text ? `color: ${a.text};` : '';
+                accordsHtml += `<div class="accord-row"><div class="accord-bar-container"><div class="accord-bar" style="background:${a.color}; width:${a.w}; ${textColor}">${a.name}</div></div></div>`;
+            });
+
+            modal.innerHTML = `
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <div class="modal-inner-scroll">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            ${p.clone}
+                            <small>البديل الأقرب لـ ${p.orig}</small>
+                        </div>
+                        <img src="${p.imgC}" class="modal-bottle" onerror="this.onerror=null;this.src='fallback.png'">
+                    </div>
+                    
+                    <div class="detail-tags">
+                        <span class="d-tag">${icons.season} ${p.season}</span>
+                        <span class="d-tag">${icons.clock} ${p.longevity}</span>
+                        <span class="d-tag">${genderTag(p.gender)}</span>
+                    </div>
+
+                    <div class="tabs-container">
+                        <button class="tab-btn active" onclick="switchTab(event, 'desc')">التفاصيل</button>
+                        <button class="tab-btn" onclick="switchTab(event, 'pyramid')">الهرم العطري</button>
+                    </div>
+
+                    <div id="desc" class="tab-content active">
+                        <p>${p.desc}</p>
+                    </div>
+
+                    <div id="pyramid" class="tab-content">
+                        <div class="accords-wrap">
+                            <h4 class="sec-title">التركيبة الأساسية (Main Accords)</h4>
+                            ${accordsHtml}
+                        </div>
+
+                        <h4 class="sec-title">تدرج النوتات العطرية</h4>
+                        <!-- NEW BLOCK PYRAMID DESIGN — each note gets its own accurate icon -->
+                        <div class="blocks-pyramid">
+                            <div class="block-tier block-top">
+                                <div class="tier-content">
+                                    <span class="tier-label">الافتتاحية (Top Notes)</span>
+                                    <span class="tier-notes">${p.pyramid.t}</span>
+                                    <div class="notes-chip-row">${notesChipsHtml(p.pyramid.t)}</div>
+                                </div>
+                                <div class="tier-icon-wrap">${p.pyramid.tIcon}</div>
+                            </div>
+                            <div class="block-tier block-mid">
+                                <div class="tier-content">
+                                    <span class="tier-label">قلب العطر (Heart Notes)</span>
+                                    <span class="tier-notes">${p.pyramid.m}</span>
+                                    <div class="notes-chip-row">${notesChipsHtml(p.pyramid.m)}</div>
+                                </div>
+                                <div class="tier-icon-wrap">${p.pyramid.mIcon}</div>
+                            </div>
+                            <div class="block-tier block-base">
+                                <div class="tier-content">
+                                    <span class="tier-label">القاعدة (Base Notes)</span>
+                                    <span class="tier-notes">${p.pyramid.b}</span>
+                                    <div class="notes-chip-row">${notesChipsHtml(p.pyramid.b)}</div>
+                                </div>
+                                <div class="tier-icon-wrap">${p.pyramid.bIcon}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="purchase-bar">
+                    <div class="purchase-bar-price">ابتداءً من <span class="glow-sweep-text">${numFont(p.price.p10)} دج</span> (10 مل)</div>
+                    <div class="purchase-bar-actions">
+                        <button class="btn-order" onclick="openOrder(${p.id})">إتمام الطلب</button>
+                        <button class="btn-cart" id="btn-cart-${p.id}" onclick="addToCart(${p.id}, event)">${icons.cart}إضافة</button>
+                    </div>
+                </div>
+            `;
+
+            // Calculate Target Size & Position (The Pop-up)
+            const targetWidth = Math.min(window.innerWidth * 0.92, 500);
+            const targetHeight = Math.min(window.innerHeight * 0.85, 750);
+            const targetLeft = (window.innerWidth - targetWidth) / 2;
+            const targetTop = (window.innerHeight - targetHeight) / 2;
+
+            // 1. Initial State (Matches clicked card perfectly)
+            // Snappy, premium morph: grows straight from the card's position/size into
+            // the centered sheet — no 3D rotate (that's what caused the distortion),
+            // just a quick confident scale + fade with a touch of blur at the very start.
+            modal.style.display = 'flex';
+            modal.style.transition = 'none';
+            modal.style.top = `${rect.top}px`;
+            modal.style.left = `${rect.left}px`;
+            modal.style.width = `${rect.width}px`;
+            modal.style.height = `${rect.height}px`;
+            modal.style.transform = `scale(0.96)`;
+            modal.style.opacity = '0';
+            modal.style.filter = 'blur(3px)';
+            modal.style.borderRadius = '20px';
+            
+            // Force Reflow
+            void modal.offsetWidth;
+
+            // 2. Animate to Center
+            document.body.classList.add('no-scroll');
+            backdrop.classList.add('active');
+            cardEl.style.transition = 'opacity 0.2s ease';
+            cardEl.style.opacity = '0';
+
+            modal.style.transition = 'top 0.7s var(--ios-pop), left 0.7s var(--ios-pop), width 0.7s var(--ios-pop), height 0.7s var(--ios-pop), transform 0.7s var(--ios-pop), opacity 0.5s ease-out, filter 0.45s ease-out';
+            modal.style.opacity = '1';
+            modal.style.filter = 'blur(0px)';
+            modal.style.top = `${targetTop}px`;
+            modal.style.left = `${targetLeft}px`;
+            modal.style.width = `${targetWidth}px`;
+            modal.style.height = `${targetHeight}px`;
+            modal.style.transform = `scale(1)`;
+        };
+
+        window.closeModal = function() {
+            if(!activeCardId) return;
+            const cardEl = document.getElementById(`card-${activeCardId}`);
+            const rect = cardEl.getBoundingClientRect(); // Get original grid position
+
+            // Animate back to original spot — same snappy morph, in reverse
+            backdrop.classList.remove('active');
+            
+            modal.style.transition = 'top 0.55s var(--ios-pop), left 0.55s var(--ios-pop), width 0.55s var(--ios-pop), height 0.55s var(--ios-pop), transform 0.55s var(--ios-pop), opacity 0.4s ease-in, filter 0.4s ease-in';
+            modal.style.top = `${rect.top}px`;
+            modal.style.left = `${rect.left}px`;
+            modal.style.width = `${rect.width}px`;
+            modal.style.height = `${rect.height}px`;
+            modal.style.transform = `scale(0.96)`;
+            modal.style.opacity = '0';
+            modal.style.filter = 'blur(3px)';
+
+            cardEl.style.opacity = '1'; // Show original card
+
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.classList.remove('no-scroll');
+                activeCardId = null;
+            }, 560); // Wait for transition
+        };
+
+        // Modal Tabs
+        window.switchTab = function(evt, tabId) {
+            const buttons = document.querySelectorAll('#perfume-modal .tab-btn');
+            const contents = document.querySelectorAll('#perfume-modal .tab-content');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            evt.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // =====================================================================
+        // ORDER FLOW — sizes/full-bottle picker, Algeria wilaya/baladiya combo,
+        // and a silent handoff to your backend (see SETUP-GUIDE.md / APPS_SCRIPT_URL
+        // further below) instead of forcing the customer through Telegram.
+        // =====================================================================
+
+        // Algeria's 58 wilayas + ~1600 baladiyat (Arabic), sourced & compacted from
+        // an open Algeria administrative-divisions dataset.
+        const WILAYAS_DATA = [{"code":"01","name":"أدرار","communes":["أدرار","أوقروت","أولاد أحمد تيمي","أولاد السعيد","أولاد عيسى","أولف","إن زغمير","اقبلي","السبع","المطارفة","برج باجي مختار","بودة","تامست","تامنطيط","تسابيت","تنركوك","تيت","تيمقتن","تيمياوين","تيميمون","دلدول","رقان","زاوية كنتة","سالي","شروين","طالمين","فنوغيل","قصر قدور"]},{"code":"02","name":"الشلف","communes":["أبو الحسن","أم الدروع","أولاد بن عبد القادر","أولاد عباس","أولاد فارس","الأبيض مجاجة","الحجاج","الزبوجة","الشطية","الشلف","الصبحة","الظهرة","الكريمية","المرسى","الهرانفة","بريرة","بنايرية","بني بوعتاب","بني حواء","بني راشد","بوزغاية","بوقادير","تاجنة","تاوقريت","تلعصة","تنس","حرشون","سنجاس","سيدي عبد الرحمن","سيدي عكاشة","عين مران","مصدق","وادي الفضة","وادي سلي","وادي قوسين"]},{"code":"03","name":"الأغواط","communes":["أفلو","الأغواط","البيضاء","الحاج مشري","الحويطة","الخنق","العسافية","الغيشة","بريدة","بن ناصر بن شهرة","تاجرونة","تاجموت","تاويالة","حاسي الدلاعة","حاسي الرمل","سبقاق","سيدي بوزيد","سيدي مخلوف","عين سيدي علي","عين ماضي","قصر الحيران","قلتة سيدي سعد","وادي مرة","وادي مزي"]},{"code":"04","name":"أم البواقي","communes":["أم البواقي","أولاد حملة","أولاد زواي","أولاد قاسم","البلالة","الجازية","الحرملية","الرحية","الزرق","الضلعة","العامرية","الفجوج بوغرارة سعودي","بئر الشهداء","بحير الشرقي","بريش","سوق نعمان","سيقوس","عين البيضاء","عين الديس","عين الزيتون","عين ببوش","عين فكرون","عين كرشة","عين مليلة","فكيرينة","قصر الصباحي","مسكيانة","هنشير تومغني","وادي نيني"]},{"code":"05","name":"باتنة","communes":["أريس","أولاد سلام","أولاد سي سليمان","أولاد عمار","أولاد عوف","أولاد فاضل","إشمول","إمدوكل","إينوغيسن","الجزار","الحاسي","الرحبات","الشمرة","القصبات","القيقبة","المعذر","باتنة","بريكة","بني فضالة الحقانية","بوزينة","بولهيلات","بومقر","بومية","بيطام","تازولت","تاكسلانت","تالخمت","تغرغار","تكوت","تيغانمين","تيلاطو","تيمقاد","ثنية العابد","جرمة","حيدوسة","رأس العيون","زانة البيضاء","سريانة","سفيان","سقانة","شير","عزيل عبد القادر","عين التوتة","عين جاسر","عين ياقوت","عيون العصافير","غسيرة","فسديس","فم الطوب","قصر بلزمة","كيمل","لارباع","لازرو","لمسان","مروانة","معافة","منعة","نقاوس","وادي الشعبة","وادي الطاقة","وادي الماء"]},{"code":"06","name":"بجاية","communes":["أدكار","أقبو","أكفادو","أمالو","أميزور","أوزلاقن","أوقاس","أيت إسماعيل","أيت رزين","إغيل علي","اغرم","الفلاي","القصر","بجاية","برباشة","بني جليل","بني كسيلة","بني معوش","بني مليكش","بو جليل","بوحمزة","بوخليفة","تازمالت","تاسكريوت","تالة حمزة","تامريجت","تامقرة","تاوريرت إغيل","توجة","تيزي نبربر","تيشي","تيفرة","تيمزريت","تينبدار","خراطة","درقينة","ذراع القايد","سمعون","سوق اوفلا","سوق لإثنين","سيدي عياد","سيدي عيش","شلاطة","شميني","صدوق","طيبان","فرعون","فناية الماثن","كنديرة","مالبو","مسيسنة","وادي غير"]},{"code":"07","name":"بسكرة","communes":["أورلال","أولاد جلال","أوماش","الحاجب","الحوش","الدوسن","الشعيبة","الغروس","الفيض","القنطرة","المزيرعة","الوطاية","برانيس","برج بن عزوز","بسباس","بسكرة","بوشقرون","جمورة","خنقة سيدي ناجي","رأس الميعاد","زريبة الوادي","سيدي  خالد","سيدي عقبة","شتمة","طولقة","عين الناقة","عين زعطوط","فوغالة","ليشانة","ليوة","مخادمة","مشونش","مليلي"]},{"code":"08","name":"بشار","communes":["أولاد خضير","إقلي","العبادلة","القصابي","القنادسة","المريجة","الواتة","بشار","بن يخلف","بني عباس","بني ونيف","بوكايس","تاغيت","تامترت","تبلبالة","تيمودي","عرق فراج","كرزاز","لحمر","مشرع هواري بومدين","موغل"]},{"code":"09","name":"البليدة","communes":["أولاد يعيش","الأربعاء","البليدة","الشبلي","الشريعة","الشفة","الصومعة","العفرون","اولاد سلامة","بن خليل","بني تامو","بني مراد","بوعرفة","بوعينان","بوفاريك","بوقرة","جبابرة","حمام ملوان","صوحان","عين الرمانة","قرواو","مفتاح","موزاية","وادي العلايق","وادي جر"]},{"code":"10","name":"البويرة","communes":["آث  منصور","أعمر","أغبالو","أمشدالة","أهل القصر","أولاد راشد","أيت لعزيز","الأخضرية","الأسنام","البويرة","الحاكمية","الحجرة الزرقاء","الخبوزية","الدشمية","العجيبة","المعمورة","المقراني","الهاشمية","بئر غبالو","برج أوخريص","بشلول","بودربالة","بوكرم","تاغزوت","تاقديت","جباحية","حنيف","حيزر","ديرة","روراوة","ريدان","زبربر","سحاريج","سور الغزلان","سوق الخميس","شرفة","عين الترك","عين الحجر","عين العلوي","عين بسام","قادرية","قرومة","مزدور","معلة","وادي البردي"]},{"code":"11","name":"تمنراست","communes":["أدلس","إينغر","ابلسة","تاظروك","تمنراست","تين زواتين","عين امقل","عين صالح","عين قزام","فقارة الزوى"]},{"code":"12","name":"تبسة","communes":["أم علي","الحمامات","الحويجبات","الشريعة","العقلة","العقلة المالحة","العوينات","الكويف","الماء الابيض","المريج","المزرعة","الونزة","بئر الذهب","بئر العاتر","بئر مقدم","بجن","بكارية","بوخضرة","بولحاف الدير","تبسة","ثليجان","سطح قنطيس","صفصاف الوسرى","عين الزرقاء","فركان","قريقر","مرسط","نقرين"]},{"code":"13","name":"تلمسان","communes":["أولاد رياح","أولاد ميمون","البويهي","الحناية","الرمشي","السواحلية","السواني","العريشة","العزايل","الغزوات","الفحول","القور","باب العسة","بن سكران","بني بهدل","بني بوسعيد","بني خلاد","بني سنوس","بني صميل","بني مستر","بني وارسوس","بوحلو","تلمسان","تيانت","تيرني بني هديل","جبالة","حمام بوغرارة","دار يغمراسن","زناتة","سبدو","سبعة شيوخ","سوق الثلاثاء","سيدي الجيلالي","سيدي العبدلي","سيدي مجاهد","شتوان","صبرة","عمير","عين الكبيرة","عين النحالة","عين تالوت","عين غرابة","عين فتاح","عين فزة","عين يوسف","فلاوسن","مرسى بن مهيدي","مسيردة الفواقة","مغنية","منصورة","ندرومة","هنين","وادي الخضر"]},{"code":"14","name":"تيارت","communes":["الرحوية","الرشايقة","السبت","السبعين","السوقر","الفايجة","الناظورة","النعيمة","بوقرة","تاقدمت","تخمرت","توسنينة","تيارت","تيدة","جبيلات الرصفاء","جيلالي بن عمار","حمادية","دحموني","زمالة  الأمير عبد القادر","سرغين","سي عبد الغني","سيدي بختي","سيدي حسني","سيدي عبد الرحمن","سيدي علي ملال","شحيمة","عين الحديد","عين الذهب","عين بوشقيف","عين دزاريت","عين كرمس","فرندة","قرطوفة","قصر الشلالة","مادنة","مدروسة","مدريسة","مشرع الصفا","مغيلة","ملاكو","مهدية","وادي ليلي"]},{"code":"15","name":"تيزي وزو","communes":["أبي يوسف","أزفون","أسي يوسف","أغريب","أقرو","أقني قغران","أيت  أومالو","أيت بــوادو","أيت بومهدي","أيت تودرت","أيت خليلي","أيت شافع","أيت عقـواشة","أيت عيسى ميمون","أيت محمود","أيت يحي موسى","أيت يحيى","إبودرارن","إعــكورن","إفــرحــونان","إفليـــسن","إمســوحال","إيجــار","إيرجـــن","إيفيغاء","إيلـيــلتـن","إيلولة أومـــالو","اقبيل","الأربعــاء ناث إيراثن","بنــــي زمنزار","بني دوالة","بني زيكــي","بني عيسي","بني يني","بوجيمة","بوزقــن","بوغني","بونوح","تادمايت","تيرمتين","تيزي راشد","تيزي غنيف","تيزي نثلاثة","تيزي وزو","تيقـزيرت","تيمـيزار","ذراع الميزان","ذراع بن خدة","زكري","سوق الإثنين","سيدي نعمان","صوامـــع","عزازقة","عين الحمام","عين الزاوية","فريحة","فريقات","ماكودة","مشطراس","معـــاتقة","مقــلع","مكيرة","ميزرانـــة","واسيف","واضية","واقنون","يطــافن"]},{"code":"16","name":"الجزائر","communes":["ابن عكنون","الابيار","الجزائر الوسطى","الحراش","الحمامات","الخرايسية","الدار البيضاء","الدرارية","الدويرة","الرايس حميدو","الرحمانية","الرويبة","السحاولة","الشراقة","العاشور","القبة","القصبة","الكاليتوس","المحمدية","المدنية","المرادية","المرسى","المعالمة","المغارية","اولاد شبل","اولاد فايت","بئر توتة","بئر خادم","بئر مراد رايس","باب الزوار","باب الوادي","بابا حسن","باش جراح","براقي","برج البحري","برج الكيفان","بني مسوس","بوروبة","بوزريعة","بولوغين بن زيري","تسالة المرجة","جسر قسنطينة","حسين داي","حيدرة","دالي ابراهيم","رغاية","زرالدة","سطاوالي","سويدانية","سيدي امحمد","سيدي موسى","عين بنيان","عين طاية","محمد بلوزداد","هراوة","وادي السمار","وادي قريش"]},{"code":"17","name":"الجلفة","communes":["أم العظام","الادريسية","الجلفة","الخميس","الشارف","القديد","بن يعقوب","بنهار","بويرة الأحداب","بيرين","تعظميت","حاسي العش","حاسي بحبح","حاسي فدول","حد الصحاري","دار الشيوخ","دلدول","دويس","زعفران","زكار","سد الرحال","سلمانة","سيدي بايزيد","سيدي لعجال","عمورة","عين الإبل","عين الشهداء","عين فقه","عين معبد","عين وسارة","فيض البطمة","قرنيني","قطارة","مجبارة","مسعد","مليليحة"]},{"code":"18","name":"جيجل","communes":["أراقن سويسي","أولاد رابح","أولاد يحيى خدروش","الامير عبد القادر","الجمعة بني حبيبي","السطارة","الشحنة","الشقفة","الطاهير","العنصر","العوانة","القنار نشفي","الميلية","برج الطهر","بودريعة بني  ياجيس","بوراوي بلهادف","بوسيف أولاد عسكر","تاكسنة","جيجل","جيملة","خيري واد عجول","زيامة منصورية","سلمى بن زيادة","سيدي عبد العزيز","سيدي معروف","غبالة","قاوس","وجانة"]},{"code":"19","name":"سطيف","communes":["أوريسيا","أولاد تبان","أولاد سي أحمد","أولاد صابر","أولاد عدوان","أيت نوال مزادة","التلة","الحامة","الدهامشة","الرصفة","الطاية","العلمة","الولجة","ايت تيزي","بئر العرش","بئر حدادة","بابور","بازر سكرة","بلاعة","بني شبانة","بني عزيز","بني فودة","بني موحلي","بني ورتيلان","بني وسين","بوسلام","بوطالب","بوعنداس","بوقاعة","بيضاء برج","تاشودة","تالة إيفاسن","تيزي نبشار","جميلة","حربيل","حمام السخنة","حمام قرقور","ذراع قبيلة","سرج الغول","سطيف","صالح باي","عموشة","عين أرنات","عين أزال","عين الحجر","عين الروى","عين السبت","عين الكبيرة","عين عباسة","عين لقراج","عين ولمان","قجال","قصر الابطال","قلال","قلتة زرقاء","قنزات","ماوكلان","مزلوق","معاوية","واد البارد"]},{"code":"20","name":"سعيدة","communes":["أولاد إبراهيم","أولاد خالد","الحساسنة","المعمورة","تيرسين","دوي ثابت","سعيدة","سيدي احمد","سيدي بوبكر","سيدي عمر","عين الحجر","عين السخونة","عين السلطان","مولاي العربي","هونت","يوب"]},{"code":"21","name":"سكيكيدة","communes":["أم الطوب","أولاد حبابة","أولاد عطية","الحدائق","الحروش","الزيتونة","السبت","الشرايع","الغدير","القل","الكركرة","المرسى","الولجة بولبلوط","بكوش لخضر","بن عزوز","بني بشير","بني زيد","بني ولبان","بوشطاطة","بين الويدان","تمالوس","جندل سعدي محمد","حمادي كرومة","خناق مايو","رمضان جمال","زردازة","سكيكدة","سيدي مزغيش","صالح بو الشعور","عزابة","عين بوزيان","عين زويت","عين شرشار","عين قشرة","فلفلة","قنواع","مجاز الدشيش","وادي الزهور"]},{"code":"22","name":"سيدي بلعباس","communes":["الحصيبة","السهالة الثورة","الضاية","العمارنة","بئر الحمام","بضرابين المقراني","بلعربي","بن باديس","بن عشيبة شلية","بوجبهة البرج","بوخنفيس","تاودموت","تسالة","تغاليمت","تفسور","تلاغ","تلموني","تنيرة","حاسي دحو","حاسي زهانة","راس الماء","رجم دموش","زروالة","سفيزف","سيدي ابراهيم","سيدي بلعباس","سيدي حمادوش","سيدي خالد","سيدي دحو الزاير","سيدي شعيب","سيدي علي بن يوب","سيدي علي بوسيدي","سيدي لحسن","سيدي يعقوب","شيطوان البلايلة","طابية","عين أدن","عين البرد","عين الثريد","عين تندمين","عين قادة","لمطار","مرحوم","مرين","مزاورو","مسيد","مصطفى بن ابراهيم","مكدرة","مولاي سليسن","وادي السبع","وادي تاوريرة","وادي سفيون"]},{"code":"23","name":"عنابة","communes":["البوني","التريعات","الحجار","الشرفة","العلمة","برحال","سرايدي","سيدي عمار","شطايبي","عنابة","عين الباردة","واد العنب"]},{"code":"24","name":"قالمة","communes":["الدهوارة","الركنية","الفجوج","برج صباط","بلخير","بن جراح","بني مزلين","بوحشانة","بوحمدان","بوشقوف","بوعاتي محمود","بومهرة أحمد","تاملوكة","جبالة الخميسي","حمام النبايل","حمام دباغ","رأس العقبة","سلاوة عنونة","عين العربي","عين بن بيضاء","عين رقادة","عين صندل","عين مخلوف","قالمة","قلعة بوصبع","لخزارة","مجاز الصفاء","مجاز عمار","نشماية","هواري بومدين","هيليوبوليس","وادي الزناتي","وادي الشحم","وادي فراغة"]},{"code":"25","name":"قسنطينة","communes":["أبن باديس الهرية","أولاد رحمون","ابن زياد","الخروب","بني حميدان","بوجريو مسعود","حامة بوزيان","ديدوش مراد","زيغود يوسف","عين السمارة","عين عبيد","قسنطينة"]},{"code":"26","name":"المدية","communes":["أم الجليل","أولاد إبراهيم","أولاد امعرف","أولاد بوعشرة","أولاد دايد","أولاد عنتر","أولاد هلال","البرواقية","الحمدانية","الحوضان","الربعية","الزبيرية","السانق","السواقي","الشهبونية","العزيزية","العمارية","العوينات","العيساوية","القلب الكبير","الكاف الاخضر","المدية","بئر بن عابد","بعطة","بن شكاو","بني سليمان","بوسكن","بوشراحيل","بوعيش","بوعيشون","بوغار","بوغزول","تابلاط","تفراوت","تمسقيدة","تيزي مهدي","ثلاث دوائر","جواب","حناشة","خمس جوامع","دراق","ذراع السمار","سدراية","سغوان","سي المحجوب","سيدي الربيع","سيدي دامد","سيدي زهار","سيدي زيان","سيدي نعمان","شلالة العذاورة","شنيقل","عزيز","عوامري","عين اقصير","عين بوسيف","قصر البخاري","مجبر","مزغنة","مغراوة","مفاتحة","ميهوب","وادي حربيل","وزرة"]},{"code":"27","name":"مستغانم","communes":["أولاد بوغالم","أولاد مع الله","الحسيان (بني ياحي","السوافلية","الطواهرية","بن عبد المالك رمضان","بوقيراط","تزقايت","حاسي ماماش","حجاج","خضرة","خير الدين","ستيدية","سور","سيدي بلعطار","سيدي علي","سيدي لخضر","سيرات","صفصاف","صيادة","عشعاشة","عين بودينار","عين تادلس","عين سيدي الشريف","عين نويسي","فرناقة","ماسرة","مزغران","مستغانم","منصورة","نكمارية","وادي الخير"]},{"code":"28","name":"المسيلة","communes":["أولاد دراج","أولاد سليمان","أولاد سيدي ابراهيم","أولاد عدي لقبالة","أولاد ماضي","أولاد منصور","الحوامد","السوامع","المسيلة","المطارفة","المعاضيد","الهامل","امجدل","بئر فضة","برهوم","بلعايبة","بن زوه","بن سرور","بني يلمان","بوسعادة","بوطي السايح","تارمونت","تامسة","جبل مساعد","حمام الضلعة","خبانة","خطوطي سد الجير","دهاهنة","زرزور","سليم","سيدي امحمد","سيدي عامر","سيدي عيسى","سيدي هجرس","شلال","عين الحجل","عين الخضراء","عين الريش","عين الملح","عين فارس","محمد بوضياف","مسيف","معاريف","مقرة","مناعة","ولتام","ونوغة"]},{"code":"29","name":"معسكر","communes":["البرج","الحشم","السهايلية","الشرفاء","العلايمية","الغمري","القرط","القطنة","القعدة","المأمونية","المحمدية","المطمور","المنور","بنيان","بوحنيفية","بوهني","تيزي","تيغنيف","حسين","خلوية","رأس عين عميروش","زلامطة","زهانة","سجرارة","سيدي بوسعيد","سيدي عبد الجبار","سيدي عبد المومن","سيدي قادة","سيق","عقاز","عوف","عين أفرص","عين فارس","عين فراح","عين فكان","غروس","غريس","فراقيق","فروحة","قرجوم","ماقضة","ماوسة","معسكر","مقطع الدوز","نسمط","وادي الأبطال","وادي التاغية"]},{"code":"30","name":"ورقلة","communes":["البرمة","الحجيرة","الرويسات","الزاوية العابدية","الطيبات","العالية","المقارين","المنقر","النزلة","انقوسة","بلدة اعمر","بن ناصر","تبسبست","تقرت","تماسين","حاسي بن عبد الله","حاسي مسعود","سيدي خويلد","سيدي سليمان","عين البيضاء","ورقلة"]},{"code":"31","name":"وهران","communes":["أرزيو","البراية","السانية","العنصر","الكرمة","المرسى الكبير","بئر الجير","بطيوة","بن فريحة","بوتليليس","بوسفر","بوفاتيس","حاسي بن عقبة","حاسي بونيف","حاسي مفسوخ","سيدي الشحمي","سيدي بن يبقى","طفراوي","عين البية","عين الترك","عين الكرمة","قديل","مرسى الحجاج","مسرغين","وادي تليلات","وهران"]},{"code":"32","name":"البيض","communes":["اربوات","الأبيض سيدي الشيخ","البنود","البيض","الخيثر","الشقيق","الغاسول","الكاف الأحمر","المحرة","بريزينة","بوسمغون","بوعلام","بوقطب","توسمولين","رقاصة","ستيتن","سيدي سليمان","سيدي طيفور","سيدي عمر","شلالة","عين العراك","كراكدة"]},{"code":"33","name":"إليزي","communes":["إن أمناس","إيليزي","برج الحواس","برج عمر إدريس","جانت","دبداب"]},{"code":"34","name":"برج بوعريريج","communes":["أولاد أبراهم","أولاد دحمان","أولاد سيدي ابراهيم","الحمادية","الرابطة","العش","العناصر","القصور","القلة","الماين","المنصورة","المهير","الياشير","بئر قاصد علي","برج الغدير","برج بوعريرج","برج زمورة","بليمور","بن داود","تسامرت","تفرق","تقلعيت","تيكستار","ثنية النصر","جعافرة","حرازة","حسناوة","خليل","رأس الوادي","سيدي أمبارك","عين تاغروت","عين تسرة","غيلاسة","مجانة"]},{"code":"35","name":"بومرداس","communes":["أعفير","أولاد عيسى","أولاد موسى","أولاد هداج","الاربعطاش","الثنية","الخروبة","الناصرية","برج منايل","بغلية","بن شود","بني عمران","بودواو","بودواو البحري","بوزقزة قدارة","بومرداس","تاورقة","تيجلابين","تيمزريت","جنات","حمادي","خميس الخشنة","دلس","زموري","سوق الحد","سي مصطفى","سيدي داود","شعبة العامر","عمال","قورصو","لقاطة","يسر"]},{"code":"36","name":"الطارف","communes":["البسباس","الذرعـان","الزيتونة","السوارخ","الشافية","الشط","الطارف","العيون","القالة","بحيرة الطيور","بريحان","بن مهيدي","بوثلجة","بوحجار","بوقوس","حمام بني صالح","رمل السوق","زريزر","شبيطة مختار","شحاني","عصفور","عين العسل","عين الكرمة","وادي الزيتون"]},{"code":"37","name":"تندوف","communes":["أم العسل","تندوف"]},{"code":"38","name":"تسمسيلت","communes":["أولاد بسام","الأربعاء","الأزهرية","العيون","المعاصم","الملعب","اليوسفية","برج الأمير عبد القادر","برج بونعامة","بني شعيب","بني لحسن","بوقائد","تملاحت","تيسمسيلت","ثنية الاحد","خميستي","سيدي العنتري","سيدي بوتوشنت","سيدي سليمان","سيدي عابد","عماري","لرجام"]},{"code":"39","name":"الوادي","communes":["أم الطيور","البياضة","الحمراية","الدبيلة","الرباح","الرقيبة","الطالب العربي","الطريفاوي","العقلة","المرارة","المغير","المقرن","النخلة","الوادي","اميه وانسة","بن  قشة","تغزوت","تندلة","جامعة","حاسي خليفة","حساني عبد الكريم","دوار الماء","سطيل","سيدي خليل","سيدي عمران","سيدي عون","قمار","كوينين","وادي العلندة","ورماس"]},{"code":"40","name":"خنشلة","communes":["أولاد رشاش","الحامة","الرميلة","المحمل","الولجة","انسيغة","بابار","بغاي","بوحمامة","تاوزيانت","جلال","خنشلة","خيران","ششار","شلية","طامزة","عين الطويلة","قايس","متوسة","مصارة","يابوس"]},{"code":"41","name":"سوق الأهراس","communes":["أم العظايم","أولاد إدريس","أولاد مومن","الحدادة","الحنانشة","الخضارة","الدريعة","الراقوبة","الزعرورية","الزوابي","المراهنة","المشروحة","بئر بوحوش","تاورة","ترقالت","تيفاش","خميسة","سافل الويدان","سدراتة","سوق أهراس","سيدي فرج","عين الزانة","عين سلطان","مداوروش","وادي الكبريت","ويلان"]},{"code":"42","name":"تيبازة","communes":["أحمر العين","أغبال","الأرهاط","الحطاطبة","الداموس","الشعيبة","القليعة","الناظور","بني ميلك","بواسماعيل","بورقيقة","بوهارون","تيبازة","حجرة النص","حجوط","خميستي","دواودة","سيدي راشد","سيدي سميان","سيدي عامر","سيدي غيلاس","شرشال","عين تاقورايت","فوكة","قوراية","مراد","مسلمون","مناصر"]},{"code":"43","name":"ميلة","communes":["أحمد راشدي","أولاد اخلوف","اعميرة اراس","التلاغمة","الرواشد","الشيقارة","العياضي برباس","القرارم قوقة","بن يحي عبد الرحمن","بوحاتم","تاجنانت","ترعي باينان","تسالة لمطاعي","تسدان حدادة","تيبرقنت","حمالة","دراحي بوصلاح","زغاية","سيدي خليفة","سيدي مروان","شلغوم العيد","عين البيضاء أحريش","عين التين","عين الملوك","فرجيوة","مشيرة","ميلة","مينار زارزة","وادي العثمانية","وادي النجاء","وادي سقان","يحي بني قشة"]},{"code":"44","name":"عين الدفلى","communes":["الحسانية","الحسينية","الروينة","العامرة","العبادية","العطاف","الماين","المخاطرية","بئر ولد خليفة","بربوش","برج الأمير خالد","بطحية","بلعاص","بن علال","بوراشد","بومدفع","تاشتة زقاغة","تبركانين","جليدة","جمعة أولاد الشيخ","جندل","حمام ريغة","خميس مليانة","زدين","سيدي الأخضر","طارق بن زياد","عريب","عين الاشياخ","عين البنيان","عين التركي","عين الدفلى","عين السلطان","عين بويحيى","مليانة","واد الجمعة","وادي الشرفاء"]},{"code":"45","name":"النعامة","communes":["البيوض","القصدير","المشرية","النعامة","تيوت","جنين بورزق","سفيسيفة","عسلة","عين الصفراء","عين بن خليل","مغرار","مكمن بن عمار"]},{"code":"46","name":"عين تموشنت","communes":["أغلال","أولاد الكيحل","أولاد بوجمعة","الأمير عبد القادر","الحساسنة","العامرية","المالح","المساعيد","بني صاف","بوزجار","تارقة","تامزورة","حاسي الغلة","حمام بوحجر","سيدي بن عدة","سيدي بومدين","سيدي صافي","سيدي ورياش","شعبة اللحم","شنتوف","عقب الليل","عين الأربعاء","عين الطلبة","عين الكيحل","عين تموشنت","وادي الصباح","وادي برقش","ولهاصة الغرابة"]},{"code":"47","name":"غرداية","communes":["العطف","القرارة","المنصورة","المنيعة","بريان","بونورة","حاسي الفحل","حاسي القارة","زلفانة","سبسب","ضاية بن ضحوة","غرداية","متليلي"]},{"code":"48","name":"غليزان","communes":["أولاد سيدي الميهوب","أولاد يعيش","الحاسي","الحمادنة","الرمكة","القطار","القلعة","المطمر","الولجة","بلعسل بوزقزة","بن داود","بني درقن","بني زنطيس","جديوية","حد الشكالة","حمري","دار بن عبد الله","زمورة","سوق الحد","سيدي  خطاب","سيدي أمحمد بن علي","سيدي امحمد بن عودة","سيدي سعادة","سيدي لزرق","عمي موسى","عين الرحمة","عين طارق","غليزان","لحلاف","مازونة","مديونة","مرجة سيدي عابد","منداس","وادي الجمعة","وادي السلام","وادي رهيو","واريزان","يلل"]},{"code":"49","name":"تيميمون","communes":["تيميمون","أولاد سعيد","المطارفة","أولاد أحمد تيمي","تنركوك","سالي","فنوغيل","بودة","أوقروت","طالمين","تسابيت","حاسي رقان"]},{"code":"50","name":"برج باجي مختار","communes":["برج باجي مختار","تيمياوين"]},{"code":"51","name":"أولاد جلال","communes":["أولاد جلال","سيدي خالد","الدوسن","بنى ثور","الشعيبة","رأس الميعاد","سيدي عمران"]},{"code":"52","name":"بني عباس","communes":["بني عباس","تبلبالة","القصابي","العبادلة","تيمودي","كرزاز","إقلي","بني ونيف","تاغيت","الواتة"]},{"code":"53","name":"إن صالح","communes":["عين صالح","فقارة الزوى","إن غر"]},{"code":"54","name":"إن قزام","communes":["عين قزام","تين زواتين"]},{"code":"55","name":"تقرت","communes":["تقرت","الطيبات","المقارين","تماسين","النزلة","الزاوية العابدية","بلدة عمر","الحجيرة"]},{"code":"56","name":"جانت","communes":["جانت","برج عمر إدريس","دبداب"]},{"code":"57","name":"المغير","communes":["المغير","سطيل","الطريفاوي","أم الطيور","سيدي عمران","المرارة"]},{"code":"58","name":"المنيعة","communes":["المنيعة","حاسي القارة","حاسي الفحل"]}];
+
+        // ---- Delivery tariffs per wilaya — code matches WILAYAS_DATA ----
+        // office = التوصيل للمكتب (Stop Desk), home = التوصيل للمنزل (à Domicile)
+        // Only wilayas listed here have delivery coverage. Any wilaya code NOT
+        // present in this table (currently: 50 برج باجي مختار, 54 إن قزام) has
+        // no delivery service yet — picking one of those triggers a popup
+        // asking the customer to reach us on social media instead.
+        const WILAYA_DELIVERY_PRICES = {
+            "01": { office: 750, home: 1250 }, // Adrar
+            "02": { office: 400, home: 700 }, // Chlef
+            "03": { office: 550, home: 900 }, // Laghouat
+            "04": { office: 450, home: 750 }, // Oum El Bouaghi
+            "05": { office: 450, home: 750 }, // Batna
+            "06": { office: 450, home: 750 }, // Béjaïa
+            "07": { office: 550, home: 900 }, // Biskra
+            "08": { office: 750, home: 1300 }, // Béchar
+            "09": { office: 350, home: 500 }, // Blida
+            "10": { office: 450, home: 700 }, // Bouira
+            "11": { office: 1150, home: 1550 }, // Tamanrasset
+            "12": { office: 450, home: 800 }, // Tébessa
+            "13": { office: 400, home: 800 }, // Tlemcen
+            "14": { office: 450, home: 800 }, // Tiaret
+            "15": { office: 400, home: 700 }, // Tizi Ouzou
+            "16": { office: 400, home: 500 }, // Alger
+            "17": { office: 550, home: 900 }, // Djelfa
+            "18": { office: 450, home: 750 }, // Jijel
+            "19": { office: 450, home: 700 }, // Sétif
+            "20": { office: 450, home: 800 }, // Saïda
+            "21": { office: 450, home: 750 }, // Skikda
+            "22": { office: 450, home: 800 }, // Sidi Bel Abbès
+            "23": { office: 450, home: 750 }, // Annaba
+            "24": { office: 450, home: 750 }, // Guelma
+            "25": { office: 450, home: 750 }, // Constantine
+            "26": { office: 450, home: 700 }, // Médéa
+            "27": { office: 450, home: 750 }, // Mostaganem
+            "28": { office: 450, home: 700 }, // M'Sila
+            "29": { office: 450, home: 750 }, // Mascara
+            "30": { office: 600, home: 950 }, // Ouargla
+            "31": { office: 400, home: 700 }, // Oran
+            "32": { office: 750, home: 1050 }, // El Bayadh
+            "33": { office: 1100, home: 1550 }, // Illizi
+            "34": { office: 200, home: 450 }, // Bordj Bou Arreridj
+            "35": { office: 400, home: 700 }, // Boumerdès
+            "36": { office: 450, home: 750 }, // El Tarf
+            "37": { office: 800, home: 1300 }, // Tindouf
+            "38": { office: 450, home: 800 }, // Tissemsilt
+            "39": { office: 600, home: 1000 }, // El Oued
+            "40": { office: 500, home: 800 }, // Khenchela
+            "41": { office: 500, home: 800 }, // Souk Ahras
+            "42": { office: 400, home: 700 }, // Tipaza
+            "43": { office: 450, home: 750 }, // Mila
+            "44": { office: 400, home: 700 }, // Aïn Defla
+            "45": { office: 550, home: 970 }, // Naâma
+            "46": { office: 450, home: 750 }, // Aïn Témouchent
+            "47": { office: 550, home: 1000 }, // Ghardaïa
+            "48": { office: 450, home: 750 }, // Relizane
+            "49": { office: 750, home: 1300 }, // Timimoun
+            "51": { office: 550, home: 900 }, // Ouled Djellal
+            "52": { office: 850, home: 1300 }, // Beni Abbes
+            "53": { office: 1000, home: 1550 }, // In Salah
+            "55": { office: 600, home: 950 }, // Touggourt
+            "56": { office: 1550, home: 2250 }, // Djanet
+            "57": { office: 600, home: 980 }, // El M'Ghair
+            "58": { office: 550, home: 1000 }, // El Meniaa
+        };
+
+        // Numeric delivery price for the currently selected wilaya + delivery
+        // type, or null if unavailable (no wilaya/type picked yet, or this
+        // wilaya has no delivery coverage at all).
+        function getDeliveryPriceValue() {
+            if (!orderState.wilaya || !orderState.deliveryType) return null;
+            const entry = WILAYA_DELIVERY_PRICES[orderState.wilaya.code];
+            if (!entry) return null;
+            const val = orderState.deliveryType === 'home' ? entry.home : entry.office;
+            return typeof val === 'number' ? val : null;
+        }
+
+        // Returns the HTML to show under the delivery-type step, based on the
+        // currently selected wilaya + delivery type.
+        function getDeliveryPriceHtml() {
+            if (!orderState.wilaya || !orderState.deliveryType) return '';
+            const entry = WILAYA_DELIVERY_PRICES[orderState.wilaya.code];
+            if (!entry) {
+                return `<div class="delivery-price-note delivery-price-note--pending">🚫 التوصيل غير متوفر حالياً لهذه الولاية — تواصل معنا عبر فيسبوك أو تيك توك</div>`;
+            }
+            const val = orderState.deliveryType === 'home' ? entry.home : entry.office;
+            if (typeof val === 'number') {
+                return `<div class="delivery-price-note">🚚 سعر التوصيل: <span class="glow-sweep-text">${numFont(val + ' دج')}</span></div>`;
+            }
+            return `<div class="delivery-price-note delivery-price-note--pending">🚚 سيتم إعلامك بسعر التوصيل عند تأكيد الطلب هاتفياً</div>`;
+        }
+
+        function updateDeliveryPriceNote() {
+            const el = document.getElementById('delivery-price-note');
+            if (el) el.innerHTML = getDeliveryPriceHtml();
+        }
+
+        // Plain-text version (no HTML) used in the payload sent to the backend/Telegram.
+        function getDeliveryPriceLabel() {
+            const val = getDeliveryPriceValue();
+            if (typeof val === 'number') return `${val} دج`;
+            if (!orderState.wilaya || !orderState.deliveryType) return null;
+            return WILAYA_DELIVERY_PRICES[orderState.wilaya.code] ? 'سيُحدد هاتفياً عند تأكيد الطلب' : 'لا تتوفر تغطية توصيل لهذه الولاية';
+        }
+
+        // Shown once when the customer picks a wilaya that has no delivery
+        // coverage at all in WILAYA_DELIVERY_PRICES.
+        function showNoDeliveryPopup(wilayaName) {
+            showIosAlert({
+                title: '🚫 التوصيل غير متوفر حالياً',
+                msg: `للأسف لا نغطي التوصيل إلى ولاية ${wilayaName} حالياً ضمن قائمة أسعارنا. يرجى التواصل معنا مباشرة عبر <a href="${SOCIAL_LINKS.facebook}" target="_blank" rel="noopener" style="color:var(--gold); text-decoration:underline;">فيسبوك</a> أو <a href="${SOCIAL_LINKS.tiktok}" target="_blank" rel="noopener" style="color:var(--gold); text-decoration:underline;">تيك توك</a> وسنساعدك لإتمام طلبك بأفضل طريقة ممكنة.`,
+                btnText: 'حسناً'
+            });
+        }
+
+        const orderState = {
+            perfumeId: null,
+            purchaseType: null, // 'decant' | 'full'
+            size: null,         // 10 | 20 | 30
+            deliveryType: null, // 'home' | 'office'
+            wilaya: null,       // {code,name}
+            baladiya: null      // string
+        };
+
+        // ============ COUPON: 5 partial perfumes = 10% off ============
+        // Shown once per page load, the very first time the customer taps
+        // "إتمام الطلب" on any perfume — never again after that until reload.
+        let couponPopupShown = false;
+        function maybeShowCouponPopup() {
+            if (couponPopupShown) return;
+            couponPopupShown = true;
+            showIosAlert({
+                title: '🎁 كوبون خصم 10%',
+                msg: 'اختر أي 5 عطور تقسيم من متجرنا — وليس بالضرورة من نفس العطر — واحصل تلقائياً على خصم 10% من السعر الكامل عند إتمام طلبك.',
+                btnText: 'حسناً، فهمت'
+            });
+        }
+
+        function bottleShapeSVG(ml) {
+            // Simple, elegant spray-bottle SHAPES (not photos) inspired by the reference
+            // image: clear square-ish glass body, metallic cap + spray pump.
+            // Bigger ml => taller/wider silhouette. Sizes are generous — the visual is
+            // deliberately cropped (top portion only) with a soft fade by its container.
+            const dims = {
+                10: { w: 92, h: 260, bodyTop: 104 },
+                20: { w: 104, h: 300, bodyTop: 110 },
+                30: { w: 116, h: 340, bodyTop: 116 }
+            }[ml];
+            const { w, h, bodyTop } = dims;
+            const cx = w / 2;
+            return `
+            <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="capGrad${ml}" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#8a6a2c"/>
+                        <stop offset="50%" stop-color="#f0d38a"/>
+                        <stop offset="100%" stop-color="#8a6a2c"/>
+                    </linearGradient>
+                    <linearGradient id="glassGrad${ml}" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="rgba(255,255,255,0.05)"/>
+                        <stop offset="45%" stop-color="rgba(255,255,255,0.35)"/>
+                        <stop offset="55%" stop-color="rgba(255,255,255,0.35)"/>
+                        <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+                    </linearGradient>
+                </defs>
+                <!-- nozzle button -->
+                <circle cx="${cx}" cy="12" r="9" fill="#e9e9e9"/>
+                <!-- pump stem -->
+                <rect x="${cx-4.5}" y="21" width="9" height="14" fill="#ccc"/>
+                <!-- cap -->
+                <rect x="${cx-19}" y="35" width="38" height="48" rx="6" fill="url(#capGrad${ml})" stroke="#5c451c" stroke-width="1.4"/>
+                <!-- neck -->
+                <rect x="${cx-9}" y="${bodyTop-20}" width="18" height="26" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+                <!-- body -->
+                <rect x="8" y="${bodyTop}" width="${w-16}" height="${h-bodyTop-10}" rx="14"
+                      fill="rgba(255,255,255,0.08)" stroke="rgba(220,167,74,0.55)" stroke-width="1.8"/>
+                <rect x="8" y="${bodyTop}" width="${w-16}" height="${h-bodyTop-10}" rx="14" fill="url(#glassGrad${ml})"/>
+                <!-- base shadow ellipse -->
+                <ellipse cx="${cx}" cy="${h-8}" rx="${(w-16)/2}" ry="5" fill="rgba(0,0,0,0.35)"/>
+            </svg>`;
+        }
+
+        window.openOrder = function(perfumeId) {
+            maybeShowCouponPopup();
+            const p = perfumesData.find(x => x.id === perfumeId);
+            orderState.perfumeId = perfumeId;
+            orderState.purchaseType = null;
+            orderState.size = null;
+            orderState.deliveryType = null;
+            orderState.wilaya = null;
+            orderState.baladiya = null;
+
+            const overlay = document.getElementById('order-overlay');
+            const backdrop2 = document.getElementById('order-overlay-backdrop-blur');
+
+            overlay.innerHTML = `
+                <div class="order-header">
+                    <button class="btn-back-order" onclick="closeOrder()">&times;</button>
+                    <div class="order-header-title">
+                        <h3>إتمام الطلب</h3>
+                        <small>${p.clone} — بديل ${p.orig}</small>
+                    </div>
+                </div>
+                <div class="order-scroll">
+                    <div class="order-section-label">1) اختر طريقة الشراء</div>
+                    <div class="type-toggle-row">
+                        <div class="type-pill" id="pill-decant" onclick="selectPurchaseType('decant')">التقسيم (عينات)</div>
+                        <div class="type-pill" id="pill-full" onclick="selectPurchaseType('full')">العبوة الكاملة</div>
+                    </div>
+
+                    <div id="purchase-visual-area"></div>
+                    <div class="choice-banner" id="choice-banner"></div>
+
+                    <div class="order-section-label">2) طريقة التوصيل</div>
+                    <div class="type-toggle-row">
+                        <div class="type-pill" id="pill-deliver-home" onclick="selectDeliveryType('home')">🏠 توصيل للمنزل</div>
+                        <div class="type-pill" id="pill-deliver-office" onclick="selectDeliveryType('office')">🏢 توصيل للمكتب</div>
+                    </div>
+                    <div class="delivery-price-note" id="delivery-price-note"></div>
+
+                    <div class="order-section-label">3) معلومات التوصيل</div>
+                    <div class="order-field">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="ord-name" placeholder="مثال: أحمد بن علي" autocomplete="off">
+                    </div>
+                    <div class="order-field">
+                        <label>رقم الهاتف</label>
+                        <input type="tel" id="ord-phone" placeholder="0555 12 34 56" autocomplete="off">
+                    </div>
+                    <div class="order-field combo-wrap">
+                        <label>الولاية</label>
+                        <input type="text" id="ord-wilaya-input" placeholder="اكتب أو اختر الولاية..." autocomplete="off"
+                               oninput="filterWilaya(this.value)" onfocus="filterWilaya(this.value)">
+                        <div class="combo-list" id="wilaya-list"></div>
+                    </div>
+                    <div class="order-field combo-wrap">
+                        <label>البلدية</label>
+                        <input type="text" id="ord-baladiya-input" placeholder="اختر الولاية أولاً" autocomplete="off" disabled
+                               oninput="filterBaladiya(this.value)" onfocus="filterBaladiya(this.value)">
+                        <div class="combo-list" id="baladiya-list"></div>
+                    </div>
+                    <div class="order-field">
+                        <label>عنوان بالتفصيل / ملاحظات (اختياري)</label>
+                        <textarea id="ord-notes" placeholder="الحي، رقم المنزل، أقرب نقطة معروفة..."></textarea>
+                    </div>
+                </div>
+                <div class="order-footer">
+                    <div class="order-footer-price" id="order-footer-price"></div>
+                    <button class="order-submit-btn" onclick="submitOrder()">تأكيد الطلب</button>
+                </div>
+            `;
+
+            overlay.style.display = 'flex';
+            backdrop2.classList.add('active');
+            document.body.classList.add('no-scroll');
+            void overlay.offsetWidth;
+            overlay.classList.add('active');
+
+            renderPurchaseVisual(p);
+            updateOrderFooterPrice();
+
+            // click-outside closes combo lists
+            document.addEventListener('click', comboOutsideClick);
+        };
+
+        window.closeOrder = function() {
+            const overlay = document.getElementById('order-overlay');
+            const backdrop2 = document.getElementById('order-overlay-backdrop-blur');
+            overlay.classList.remove('active');
+            backdrop2.classList.remove('active');
+            document.removeEventListener('click', comboOutsideClick);
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.body.classList.remove('no-scroll');
+            }, 650);
+        };
+
+        function comboOutsideClick(e) {
+            if (!e.target.closest('.combo-wrap')) {
+                document.querySelectorAll('.combo-list').forEach(l => l.classList.remove('open'));
+            }
+        }
+
+        function renderPurchaseVisual(p) {
+            document.getElementById('pill-decant').classList.toggle('selected', orderState.purchaseType === 'decant');
+            document.getElementById('pill-full').classList.toggle('selected', orderState.purchaseType === 'full');
+            if (orderState.purchaseType === 'full') document.getElementById('pill-full').classList.remove('locked-pill');
+            const area = document.getElementById('purchase-visual-area');
+
+            if (orderState.purchaseType === 'decant') {
+                area.innerHTML = `
+                    <div class="sizes-instruction"><span class="arrow-bounce">👇</span> اضغط على الحجم الذي تريده</div>
+                    <div class="sizes-row">
+                        ${[10, 20, 30].map(ml => `
+                            <div class="size-bottle-card" id="size-card-${ml}" onclick="selectSize(${ml})">
+                                <div class="bottle-visual-crop">${bottleShapeSVG(ml)}</div>
+                                <div class="size-label-badge">${ml} مل</div>
+                                <div class="size-price">${p.price['p' + ml]}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (orderState.purchaseType === 'full') {
+                area.innerHTML = `
+                    <div class="full-bottle-wrap" id="full-bottle-wrap">
+                        <div class="full-bottle-badge">✨ خيار خاص</div>
+                        <div class="full-bottle-shine-wrap" id="full-bottle-shine-wrap">
+                            <div class="full-bottle-floater">
+                                <img id="full-bottle-img" src="${p.imgC}" onerror="this.onerror=null;this.src='fallback.png'">
+                            </div>
+                            <div class="coming-soon-badge">سيتوفر قريباً ✨</div>
+                        </div>
+                        <div class="full-bottle-price">${p.price.full}</div>
+                    </div>
+                `;
+                orderState.size = null;
+
+                // Let the user admire it for a beat with a light sweeping across the
+                // glass, then it settles into a dimmed, blurred "coming soon" state —
+                // this option genuinely isn't purchasable yet.
+                const wrap = document.getElementById('full-bottle-wrap');
+                const shineWrap = document.getElementById('full-bottle-shine-wrap');
+                requestAnimationFrame(() => {
+                    wrap.classList.add('coming-soon');
+                    shineWrap.classList.add('shine');
+                });
+                clearTimeout(window._fullBottleLockTimer);
+                window._fullBottleLockTimer = setTimeout(() => {
+                    if (!document.getElementById('full-bottle-wrap')) return;
+                    wrap.classList.add('locked');
+                    // This option can't actually be completed right now — release the
+                    // selection so the order form correctly asks for a real choice.
+                    if (orderState.purchaseType === 'full') {
+                        orderState.purchaseType = null;
+                        document.getElementById('pill-full').classList.remove('selected');
+                        document.getElementById('pill-full').classList.add('locked-pill');
+                        updateChoiceBanner();
+                    }
+                }, 1400);
+            } else {
+                area.innerHTML = '';
+            }
+            updateChoiceBanner();
+        }
+
+        window.selectPurchaseType = function(type) {
+            orderState.purchaseType = type;
+            orderState.size = null;
+            const p = perfumesData.find(x => x.id === orderState.perfumeId);
+            renderPurchaseVisual(p);
+        };
+
+        window.selectDeliveryType = function(type) {
+            orderState.deliveryType = type;
+            const homePill = document.getElementById('pill-deliver-home');
+            const officePill = document.getElementById('pill-deliver-office');
+            if (homePill) homePill.classList.toggle('selected', type === 'home');
+            if (officePill) officePill.classList.toggle('selected', type === 'office');
+
+            // Office (Stop Desk) delivery doesn't need a specific baladiya —
+            // black the field out and stop requiring it.
+            const baladiyaInput = document.getElementById('ord-baladiya-input');
+            const baladiyaField = baladiyaInput ? baladiyaInput.closest('.order-field') : null;
+            if (baladiyaInput) {
+                if (type === 'office') {
+                    orderState.baladiya = 'توصيل للمكتب';
+                    baladiyaInput.value = 'غير مطلوب (توصيل للمكتب)';
+                    baladiyaInput.disabled = true;
+                    if (baladiyaField) baladiyaField.classList.add('field-blacked-out');
+                    document.getElementById('baladiya-list')?.classList.remove('open');
+                } else {
+                    orderState.baladiya = null;
+                    baladiyaInput.disabled = !orderState.wilaya;
+                    baladiyaInput.placeholder = orderState.wilaya ? 'اكتب أو اختر البلدية...' : 'اختر الولاية أولاً';
+                    if (baladiyaInput.value === 'غير مطلوب (توصيل للمكتب)') baladiyaInput.value = '';
+                    if (baladiyaField) baladiyaField.classList.remove('field-blacked-out');
+                }
+            }
+
+            updateDeliveryPriceNote();
+            updateOrderFooterPrice();
+        };
+
+        window.selectSize = function(ml) {
+            orderState.size = ml;
+            document.querySelectorAll('.size-bottle-card').forEach(el => el.classList.remove('selected'));
+            const chosen = document.getElementById(`size-card-${ml}`);
+            if (chosen) chosen.classList.add('selected');
+            updateChoiceBanner();
+        };
+
+        function updateChoiceBanner() {
+            const banner = document.getElementById('choice-banner');
+            if (banner) {
+                if (orderState.purchaseType === 'decant' && orderState.size) {
+                    banner.innerHTML = `<span class="glow-sweep-text">✨ اخترت ${numFont(orderState.size)} مل ✨</span>`;
+                } else if (orderState.purchaseType === 'full') {
+                    banner.innerHTML = `<span class="glow-sweep-text">✨ اخترت العبوة الكاملة ✨</span>`;
+                } else {
+                    banner.innerHTML = '';
+                }
+            }
+            updateOrderFooterPrice();
+        }
+
+        // Price shown beside "تأكيد الطلب" — appears once the user has actually
+        // picked a size (or the full bottle), reflecting exactly what they chose,
+        // plus the delivery price once wilaya + delivery type are both set.
+        // When there's no active single-perfume order (i.e. we're in the cart
+        // checkout flow), this delegates to the cart's own price summary.
+        function updateOrderFooterPrice() {
+            const el = document.getElementById('order-footer-price');
+            if (!el) return;
+
+            if (orderState.perfumeId === null) {
+                el.innerHTML = cartState.items.length ? cartPriceHtml(true) : '';
+                return;
+            }
+
+            const p = perfumesData.find(x => x.id === orderState.perfumeId);
+            if (!p) { el.innerHTML = ''; return; }
+
+            let price = null;
+            if (orderState.purchaseType === 'decant' && orderState.size) {
+                price = p.price['p' + orderState.size];
+            } else if (orderState.purchaseType === 'full') {
+                price = p.price.full;
+            }
+
+            if (price === null || price === undefined) { el.innerHTML = ''; return; }
+
+            if (typeof price !== 'number') {
+                el.innerHTML = `<span class="glow-sweep-text">${numFont(price)}</span>`;
+                return;
+            }
+
+            const deliveryPrice = getDeliveryPriceValue();
+            const grandTotal = deliveryPrice !== null ? price + deliveryPrice : price;
+            let html = `<span class="glow-sweep-text">${numFont(grandTotal + ' دج')}</span>`;
+            if (deliveryPrice !== null) {
+                html += `<span class="price-breakdown">(${numFont(price)} + ${numFont(deliveryPrice)} توصيل)</span>`;
+            }
+            el.innerHTML = html;
+        }
+
+        // ---- Searchable Wilaya combobox ----
+        window.filterWilaya = function(query) {
+            const list = document.getElementById('wilaya-list');
+            const q = (query || '').trim();
+            const matches = WILAYAS_DATA.filter(w => !q || w.name.includes(q) || w.code.includes(q));
+            list.innerHTML = matches.length
+                ? matches.map(w => `<div class="combo-item" onclick="pickWilaya('${w.code}')">${w.name}</div>`).join('')
+                : `<div class="combo-empty">لا توجد نتائج</div>`;
+            list.classList.add('open');
+        };
+
+        window.pickWilaya = function(code) {
+            const w = WILAYAS_DATA.find(x => x.code === code);
+            orderState.wilaya = w;
+            document.getElementById('ord-wilaya-input').value = w.name;
+            document.getElementById('wilaya-list').classList.remove('open');
+
+            const baladiyaInput = document.getElementById('ord-baladiya-input');
+            const baladiyaField = baladiyaInput ? baladiyaInput.closest('.order-field') : null;
+            if (orderState.deliveryType === 'office') {
+                // Baladiya stays blacked-out/not required for office (stop desk) delivery.
+                orderState.baladiya = 'توصيل للمكتب';
+            } else {
+                orderState.baladiya = null;
+                baladiyaInput.disabled = false;
+                baladiyaInput.value = '';
+                baladiyaInput.placeholder = 'اكتب أو اختر البلدية...';
+                if (baladiyaField) baladiyaField.classList.remove('field-blacked-out');
+            }
+
+            updateDeliveryPriceNote();
+            updateOrderFooterPrice();
+
+            if (!WILAYA_DELIVERY_PRICES[w.code]) {
+                showNoDeliveryPopup(w.name);
+            }
+        };
+
+        // ---- Searchable Baladiya combobox (depends on selected wilaya) ----
+        window.filterBaladiya = function(query) {
+            if (!orderState.wilaya) return;
+            const list = document.getElementById('baladiya-list');
+            const q = (query || '').trim();
+            const communes = orderState.wilaya.communes.filter(c => !q || c.includes(q));
+            list.innerHTML = communes.length
+                ? communes.map(c => `<div class="combo-item" onclick="pickBaladiya('${c.replace(/'/g, "\\'")}')">${c}</div>`).join('')
+                : `<div class="combo-empty">لا توجد نتائج</div>`;
+            list.classList.add('open');
+        };
+
+        window.pickBaladiya = function(name) {
+            orderState.baladiya = name;
+            document.getElementById('ord-baladiya-input').value = name;
+            document.getElementById('baladiya-list').classList.remove('open');
+        };
+
+        function showOrderToast(msg) {
+            const toast = document.getElementById('order-toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3200);
+        }
+
+        window.submitOrder = function() {
+            const p = perfumesData.find(x => x.id === orderState.perfumeId);
+            const name = document.getElementById('ord-name').value.trim();
+            const phone = document.getElementById('ord-phone').value.trim();
+            const notes = document.getElementById('ord-notes').value.trim();
+
+            if (!orderState.purchaseType) { showOrderToast('يرجى اختيار طريقة الشراء أولاً'); return; }
+            if (orderState.purchaseType === 'decant' && !orderState.size) { showOrderToast('يرجى اختيار حجم العبوة (10/20/30 مل)'); return; }
+            if (!orderState.deliveryType) { showOrderToast('يرجى اختيار طريقة التوصيل (منزل/مكتب)'); return; }
+            if (!name) { showOrderToast('يرجى إدخال الاسم الكامل'); return; }
+            if (!phone) { showOrderToast('يرجى إدخال رقم الهاتف'); return; }
+            if (!orderState.wilaya) { showOrderToast('يرجى اختيار الولاية'); return; }
+            if (!orderState.baladiya) { showOrderToast('يرجى اختيار البلدية'); return; }
+            if (!WILAYA_DELIVERY_PRICES[orderState.wilaya.code]) {
+                showNoDeliveryPopup(orderState.wilaya.name);
+                return;
+            }
+
+            const sizeLabel = orderState.purchaseType === 'decant' ? `${orderState.size} مل (تقسيم)` : 'العبوة الكاملة';
+            const price = orderState.purchaseType === 'decant' ? p.price['p' + orderState.size] : p.price.full;
+            const deliveryLabel = orderState.deliveryType === 'home' ? 'توصيل للمنزل' : 'توصيل للمكتب';
+            const deliveryPrice = getDeliveryPriceValue();
+            const total = (typeof price === 'number' && deliveryPrice !== null) ? price + deliveryPrice : price;
+
+            const submitBtn = document.querySelector('#order-overlay .order-submit-btn');
+            sendOrderToBackend({
+                items: [{ name: p.clone, alt_of: p.orig, type: sizeLabel, price }],
+                deliveryType: deliveryLabel,
+                deliveryPrice: getDeliveryPriceLabel(),
+                total,
+                name, phone,
+                wilaya: orderState.wilaya.name,
+                baladiya: orderState.baladiya,
+                notes: notes || null
+            }, submitBtn, () => {
+                showIosAlert({
+                    title: 'تم استلام طلبك بنجاح ✅',
+                    msg: 'وصلنا طلبك، وسيتواصل معك فريقنا قريباً لتأكيد التفاصيل وموعد التوصيل.',
+                    btnText: 'حسناً',
+                    onClose: () => closeOrder()
+                });
+            });
+        };
+
+        // =====================================================================
+        // BACKEND HANDOFF — sends the order to the free Google Apps Script
+        // endpoint described in SETUP-GUIDE.md (it notifies Telegram + logs to
+        // a Google Sheet on your end). Paste the deployed Web App URL below.
+        // =====================================================================
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJcR552yo7HyLBMvSquESG-1pD2e3IuOz5fDz7cw9Glopm8FjKFzhQOQhDT4kwQNQ/exec";
+
+        function sendOrderToBackend(payload, submitBtn, onDone) {
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'جارِ الإرسال...'; }
+
+            const finish = () => {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'تأكيد الطلب'; }
+                onDone();
+            };
+
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_YOUR')) {
+                // Backend not linked yet — proceed with the confirmation UI so the
+                // flow can still be tested end-to-end while it's being wired up.
+                setTimeout(finish, 500);
+                return;
+            }
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Apps Script web apps don't return CORS headers
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            }).then(finish).catch(finish);
+        }
+
+        // =====================================================================
+        // CART — add-to-cart flourish + persistent cart button + simple drawer
+        // =====================================================================
+        const cartState = { items: [] }; // {id, name, img, qty}
+
+        function updateCartBadge() {
+            const totalQty = cartState.items.reduce((s, it) => s + it.qty, 0);
+            const badge = document.getElementById('cart-badge');
+            badge.textContent = totalQty;
+            badge.classList.toggle('show', totalQty > 0);
+        }
+
+        window.addToCart = function(perfumeId, evt) {
+            const p = perfumesData.find(x => x.id === perfumeId);
+            const btn = evt.currentTarget;
+            const btnRect = btn.getBoundingClientRect();
+            const cartFab = document.getElementById('cart-fab');
+
+            // Bring the FAB above any open modal/backdrop for the whole flight so the
+            // item visibly lands INTO a cart icon the user can actually see, instead
+            // of disappearing behind the popup mid-flight.
+            cartFab.classList.add('receiving');
+            const cartRect = cartFab.getBoundingClientRect();
+
+            const dx = (cartRect.left + cartRect.width / 2) - (btnRect.left + btnRect.width / 2);
+            const dy = (cartRect.top + cartRect.height / 2) - (btnRect.top + btnRect.height / 2);
+            // A gentle upward bow so the flight arcs like a toss, not a straight line
+            const arc = -Math.max(70, Math.abs(dy) * 0.5);
+
+            // Flying clone: little bottle image arcs from the button to the cart icon,
+            // with a "+1" label riding alongside so it's obvious where the product went.
+            const flyer = document.createElement('div');
+            flyer.className = 'fly-to-cart';
+            flyer.innerHTML = `<img src="${p.imgC}" onerror="this.onerror=null;this.src='fallback.png'"><span class="fly-to-cart-label">+1</span>`;
+            flyer.style.top = `${btnRect.top + btnRect.height / 2 - 23}px`;
+            flyer.style.left = `${btnRect.left + btnRect.width / 2 - 23}px`;
+            flyer.style.setProperty('--dx', `${dx}px`);
+            flyer.style.setProperty('--dy', `${dy}px`);
+            flyer.style.setProperty('--arc', `${arc}px`);
+            document.body.appendChild(flyer);
+
+            // A brief "lift off" pulse on the source button so the eye knows exactly
+            // where the item started before it takes flight.
+            btn.style.transition = 'transform 0.25s var(--ios-pop)';
+            btn.style.transform = 'scale(0.88)';
+            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 220);
+
+            requestAnimationFrame(() => flyer.classList.add('flying'));
+
+            setTimeout(() => {
+                flyer.remove();
+                cartFab.classList.add('bump');
+                const badge = document.getElementById('cart-badge');
+                badge.classList.add('bump-badge');
+                setTimeout(() => {
+                    cartFab.classList.remove('bump');
+                    cartFab.classList.remove('receiving');
+                    badge.classList.remove('bump-badge');
+                }, 900);
+
+                const existing = cartState.items.find(it => it.id === perfumeId);
+                if (existing) existing.qty += 1;
+                else cartState.items.push({ id: perfumeId, name: p.clone, img: p.imgC, qty: 1, size: 10 });
+                updateCartBadge();
+                showOrderToast(`أُضيف ${p.clone} إلى سلتك ✨`);
+            }, 1330);
+        };
+
+        window.toggleCartDrawer = function() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop3 = document.getElementById('cart-drawer-backdrop');
+            const opening = !drawer.classList.contains('active');
+            if (opening) {
+                renderCartDrawer();
+                drawer.style.display = 'flex';
+                void drawer.offsetWidth;
+                drawer.classList.add('active');
+                backdrop3.classList.add('active');
+            } else {
+                drawer.classList.remove('active');
+                backdrop3.classList.remove('active');
+                setTimeout(() => { drawer.style.display = 'none'; }, 600);
+            }
+        };
+
+        // Sums the cart at each item's chosen size, and applies the 10% coupon
+        // once total quantity across the cart reaches 5 (any perfumes, any mix).
+        function computeCartTotals() {
+            let subtotal = 0;
+            let qty = 0;
+            cartState.items.forEach(it => {
+                const p = perfumesData.find(x => x.id === it.id);
+                const unit = p ? Number(p.price['p' + it.size]) || 0 : 0;
+                subtotal += unit * it.qty;
+                qty += it.qty;
+            });
+            const eligible = qty >= 5;
+            const discount = eligible ? Math.round(subtotal * 0.10) : 0;
+            const total = subtotal - discount;
+            return { subtotal, discount, total, qty, eligible };
+        }
+
+        // Renders the price block used both in the cart drawer and the cart
+        // checkout footer — plain total, or strikethrough + discounted total
+        // plus a small badge once the 5-item coupon kicks in. Pass
+        // includeDelivery=true (checkout footer, once wilaya + delivery type
+        // are picked) to fold the delivery price into the grand total shown.
+        function cartPriceHtml(includeDelivery) {
+            const { subtotal, total, qty, eligible } = computeCartTotals();
+            const deliveryPrice = includeDelivery ? getDeliveryPriceValue() : null;
+            const grandTotal = deliveryPrice !== null ? total + deliveryPrice : total;
+
+            let html = '';
+            if (eligible) {
+                html += `<span class="price-strike">${subtotal} دج</span>`;
+            }
+            html += `<span class="glow-sweep-text">${numFont(grandTotal)} دج</span>`;
+            if (eligible) {
+                html += `<span class="coupon-badge">🎉 خصم 10% مطبق (${qty} قطع)</span>`;
+            }
+            if (deliveryPrice !== null) {
+                html += `<span class="price-breakdown">(يشمل ${numFont(deliveryPrice)} دج توصيل)</span>`;
+            }
+            return html;
+        }
+
+        function renderCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            if (!cartState.items.length) {
+                drawer.innerHTML = `
+                    <div class="cart-drawer-header"><h3>سلتك</h3><span style="color:#888;cursor:pointer;font-size:1.3rem" onclick="toggleCartDrawer()">&times;</span></div>
+                    <div class="cart-drawer-empty">السلة فارغة حالياً 🌸<br><small>أضف عطراً من الصفحة لتراه هنا</small></div>
+                `;
+                return;
+            }
+            drawer.innerHTML = `
+                <div class="cart-drawer-header"><h3>سلتك (${cartState.items.reduce((s,i)=>s+i.qty,0)})</h3><span style="color:#888;cursor:pointer;font-size:1.3rem" onclick="toggleCartDrawer()">&times;</span></div>
+                <div class="cart-drawer-list">
+                    ${cartState.items.map(it => `
+                        <div class="cart-drawer-item">
+                            <img src="${it.img}" onerror="this.onerror=null;this.src='fallback.png'">
+                            <div class="cart-drawer-item-info">
+                                <div class="cart-drawer-item-name">${it.name} <span class="cart-drawer-item-qty">×${it.qty}</span></div>
+                                <div class="cart-size-chip-row">
+                                    ${[10, 20, 30].map(ml => `
+                                        <div class="cart-size-chip ${it.size === ml ? 'selected' : ''}" onclick="setCartItemSize(${it.id}, ${ml})">${ml} مل</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="cart-drawer-item-remove" onclick="removeFromCart(${it.id})">&times;</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="cart-drawer-footer">
+                    <div class="cart-drawer-footer-price">${cartPriceHtml(false)}</div>
+                    <button class="order-submit-btn" onclick="openCartOrder()">إتمام الطلب</button>
+                </div>
+            `;
+        }
+
+        window.setCartItemSize = function(perfumeId, ml) {
+            const it = cartState.items.find(x => x.id === perfumeId);
+            if (it) it.size = ml;
+            renderCartDrawer();
+        };
+
+        window.removeFromCart = function(perfumeId) {
+            cartState.items = cartState.items.filter(it => it.id !== perfumeId);
+            updateCartBadge();
+            renderCartDrawer();
+        };
+
+        // =====================================================================
+        // CART CHECKOUT — lets the user complete an order for everything in the
+        // cart in one go, without having to reopen each perfume individually.
+        // =====================================================================
+        window.openCartOrder = function() {
+            if (!cartState.items.length) { showOrderToast('السلة فارغة حالياً'); return; }
+            maybeShowCouponPopup();
+
+            // Jump straight from the drawer into the checkout sheet.
+            const drawer = document.getElementById('cart-drawer');
+            const drawerBackdrop = document.getElementById('cart-drawer-backdrop');
+            drawer.classList.remove('active');
+            drawerBackdrop.classList.remove('active');
+            drawer.style.display = 'none';
+
+            orderState.perfumeId = null;
+            orderState.purchaseType = null;
+            orderState.size = null;
+            orderState.deliveryType = null;
+            orderState.wilaya = null;
+            orderState.baladiya = null;
+
+            const totalQty = cartState.items.reduce((s, i) => s + i.qty, 0);
+            const itemsHtml = cartState.items.map(it => `
+                <div class="cart-order-item-row">
+                    <img src="${it.img}" onerror="this.onerror=null;this.src='fallback.png'">
+                    <div class="cart-order-item-text">${it.name} — ${it.size} مل <span class="cart-order-item-qty">×${it.qty}</span></div>
+                </div>
+            `).join('');
+
+            const overlay = document.getElementById('order-overlay');
+            const backdrop2 = document.getElementById('order-overlay-backdrop-blur');
+
+            overlay.innerHTML = `
+                <div class="order-header">
+                    <button class="btn-back-order" onclick="closeOrder()">&times;</button>
+                    <div class="order-header-title">
+                        <h3>إتمام الطلب</h3>
+                        <small>طلبك يضم ${totalQty} ${totalQty === 1 ? 'قطعة' : 'قطع'}</small>
+                    </div>
+                </div>
+                <div class="order-scroll">
+                    <div class="order-section-label">1) محتويات السلة</div>
+                    <div class="cart-order-items">${itemsHtml}</div>
+
+                    <div class="order-section-label">2) طريقة التوصيل</div>
+                    <div class="type-toggle-row">
+                        <div class="type-pill" id="pill-deliver-home" onclick="selectDeliveryType('home')">🏠 توصيل للمنزل</div>
+                        <div class="type-pill" id="pill-deliver-office" onclick="selectDeliveryType('office')">🏢 توصيل للمكتب</div>
+                    </div>
+                    <div class="delivery-price-note" id="delivery-price-note"></div>
+
+                    <div class="order-section-label">3) معلومات التوصيل</div>
+                    <div class="order-field">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="ord-name" placeholder="مثال: أحمد بن علي" autocomplete="off">
+                    </div>
+                    <div class="order-field">
+                        <label>رقم الهاتف</label>
+                        <input type="tel" id="ord-phone" placeholder="0555 12 34 56" autocomplete="off">
+                    </div>
+                    <div class="order-field combo-wrap">
+                        <label>الولاية</label>
+                        <input type="text" id="ord-wilaya-input" placeholder="اكتب أو اختر الولاية..." autocomplete="off"
+                               oninput="filterWilaya(this.value)" onfocus="filterWilaya(this.value)">
+                        <div class="combo-list" id="wilaya-list"></div>
+                    </div>
+                    <div class="order-field combo-wrap">
+                        <label>البلدية</label>
+                        <input type="text" id="ord-baladiya-input" placeholder="اختر الولاية أولاً" autocomplete="off" disabled
+                               oninput="filterBaladiya(this.value)" onfocus="filterBaladiya(this.value)">
+                        <div class="combo-list" id="baladiya-list"></div>
+                    </div>
+                    <div class="order-field">
+                        <label>عنوان بالتفصيل / ملاحظات (اختياري)</label>
+                        <textarea id="ord-notes" placeholder="الحي، رقم المنزل، أقرب نقطة معروفة..."></textarea>
+                    </div>
+                </div>
+                <div class="order-footer">
+                    <div class="order-footer-price" id="order-footer-price"></div>
+                    <button class="order-submit-btn" onclick="submitCartOrder()">تأكيد الطلب</button>
+                </div>
+            `;
+
+            overlay.style.display = 'flex';
+            backdrop2.classList.add('active');
+            document.body.classList.add('no-scroll');
+            void overlay.offsetWidth;
+            overlay.classList.add('active');
+
+            updateOrderFooterPrice();
+            document.addEventListener('click', comboOutsideClick);
+        };
+
+        window.submitCartOrder = function() {
+            const name = document.getElementById('ord-name').value.trim();
+            const phone = document.getElementById('ord-phone').value.trim();
+            const notes = document.getElementById('ord-notes').value.trim();
+
+            if (!orderState.deliveryType) { showOrderToast('يرجى اختيار طريقة التوصيل (منزل/مكتب)'); return; }
+            if (!name) { showOrderToast('يرجى إدخال الاسم الكامل'); return; }
+            if (!phone) { showOrderToast('يرجى إدخال رقم الهاتف'); return; }
+            if (!orderState.wilaya) { showOrderToast('يرجى اختيار الولاية'); return; }
+            if (!orderState.baladiya) { showOrderToast('يرجى اختيار البلدية'); return; }
+            if (!WILAYA_DELIVERY_PRICES[orderState.wilaya.code]) {
+                showNoDeliveryPopup(orderState.wilaya.name);
+                return;
+            }
+
+            const deliveryLabel = orderState.deliveryType === 'home' ? 'توصيل للمنزل' : 'توصيل للمكتب';
+            const items = cartState.items.map(it => {
+                const p = perfumesData.find(x => x.id === it.id);
+                return { name: it.name, alt_of: p ? p.orig : '', type: `${it.size} مل (تقسيم)`, qty: it.qty, price: p ? p.price['p' + it.size] : '???' };
+            });
+            const totals = computeCartTotals();
+            const deliveryPrice = getDeliveryPriceValue();
+            const grandTotal = deliveryPrice !== null ? totals.total + deliveryPrice : totals.total;
+
+            const submitBtn = document.querySelector('#order-overlay .order-submit-btn');
+            sendOrderToBackend({
+                items,
+                subtotal: totals.subtotal,
+                couponApplied: totals.eligible,
+                discount: totals.discount,
+                total: grandTotal,
+                deliveryType: deliveryLabel,
+                deliveryPrice: getDeliveryPriceLabel(),
+                name, phone,
+                wilaya: orderState.wilaya.name,
+                baladiya: orderState.baladiya,
+                notes: notes || null
+            }, submitBtn, () => {
+                cartState.items = [];
+                updateCartBadge();
+                showIosAlert({
+                    title: 'تم استلام طلبك بنجاح ✅',
+                    msg: 'وصلنا طلبك، وسيتواصل معك فريقنا قريباً لتأكيد التفاصيل وموعد التوصيل.',
+                    btnText: 'حسناً',
+                    onClose: () => closeOrder()
+                });
+            });
+        };
+
+        // =====================================================================
+        // iOS-STYLE CONFIRMATION ALERT
+        // =====================================================================
+        function showIosAlert({ title, msg, btnText = 'حسناً', onClose } = {}) {
+            const alertBackdrop = document.getElementById('ios-alert-backdrop');
+            const alertBox = document.getElementById('ios-alert');
+            alertBox.innerHTML = `
+                <div class="ios-alert-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#4cd964" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                </div>
+                <div class="ios-alert-title">${title}</div>
+                <div class="ios-alert-msg">${msg}</div>
+                <button class="ios-alert-btn" onclick="closeIosAlert()">${btnText}</button>
+            `;
+            alertBox.style.display = 'block';
+            void alertBox.offsetWidth;
+            alertBox.classList.add('active');
+            alertBackdrop.classList.add('active');
+            window._iosAlertOnClose = onClose || null;
+        }
+        window.closeIosAlert = function() {
+            const alertBackdrop = document.getElementById('ios-alert-backdrop');
+            const alertBox = document.getElementById('ios-alert');
+            alertBox.classList.remove('active');
+            alertBackdrop.classList.remove('active');
+            setTimeout(() => { alertBox.style.display = 'none'; }, 560);
+            if (window._iosAlertOnClose) { window._iosAlertOnClose(); window._iosAlertOnClose = null; }
+        };
+
+        // ============ Site credit badge behavior ============
+        // - Appears bottom-right after the intro settles, showing "made by Jalil ."
+        // - A few seconds later, sweep-fades into the Arabic version — this intro
+        //   only ever plays once per page load.
+        // - Fades off with a blur as soon as the user scrolls away from the top.
+        // - Re-appears if they scroll back to the top, but (after that first
+        //   intro has played) in a smaller, dimmer, non-animated-intro form.
+        function initSiteCredit() {
+            const badge = document.getElementById('site-credit');
+            const textEl = document.getElementById('site-credit-text');
+            if (!badge || !textEl) return;
+
+            let introPlayed = false;
+
+            setTimeout(() => { badge.classList.add('credit-visible'); }, 3000);
+
+            setTimeout(() => {
+                textEl.classList.add('credit-swap-out');
+                setTimeout(() => {
+                    textEl.textContent = 'صنع من طرف Jalil';
+                    textEl.classList.remove('credit-swap-out');
+                    introPlayed = true;
+                }, 450);
+            }, 5200);
+
+            window.addEventListener('scroll', () => {
+                const y = window.scrollY || window.pageYOffset;
+                if (y > 80) {
+                    badge.classList.add('credit-hidden');
+                } else {
+                    badge.classList.remove('credit-hidden');
+                    if (introPlayed) badge.classList.add('credit-small');
+                }
+            }, { passive: true });
+        }
+
+        function renderSocialLinks() {
+            const el = document.getElementById('ftc-social');
+            if (!el) return;
+            el.innerHTML = `
+                <a href="${SOCIAL_LINKS.facebook}" target="_blank" rel="noopener" aria-label="فيسبوك">${icons.facebook}</a>
+                <a href="${SOCIAL_LINKS.tiktok}" target="_blank" rel="noopener" aria-label="تيك توك">${icons.tiktok}</a>
+            `;
+        }
+
+        // Init App & Animations
+        document.addEventListener("DOMContentLoaded", () => {
+            renderCards();
+            renderSocialLinks();
+
+            // Intro Animations
+            setTimeout(() => { document.getElementById("logo-wrap").classList.add("moved"); }, 800); 
+            setTimeout(() => { document.getElementById("top-text").classList.add("visible"); }, 1500);
+            setTimeout(() => { document.getElementById("bottle-front").classList.add("visible"); }, 1700);
+            setTimeout(() => {
+                document.getElementById("bottle-mid-l").classList.add("visible");
+                document.getElementById("bottle-mid-r").classList.add("visible");
+            }, 1950);
+            setTimeout(() => {
+                document.getElementById("bottle-back-l").classList.add("visible");
+                document.getElementById("bottle-back-r").classList.add("visible");
+            }, 2200);
+            setTimeout(() => {
+                document.getElementById("bottom-content").classList.add("visible");
+                document.getElementById("cart-fab").classList.add("visible");
+                setupScroll();
+            }, 2800);
+
+            initSiteCredit();
+
+            // Scroll Logic
+            const logo = document.getElementById("logo-wrap");
+            const glassBar = document.getElementById("top-glass-bar");
+            
+            function setupScroll() {
+                let hasAutoScrolled = false;
+                window.addEventListener("scroll", () => {
+                    if (window.scrollY > 150) {
+                        logo.classList.add("scrolled");
+                        glassBar.classList.add("visible");
+                    } else {
+                        logo.classList.remove("scrolled");
+                        glassBar.classList.remove("visible");
+                    }
+
+                    if (!hasAutoScrolled && window.scrollY > 40 && window.scrollY < window.innerHeight / 2) {
+                        hasAutoScrolled = true; 
+                        document.getElementById("products-section").scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                });
+            }
+
+            // Scroll Observer for Cards
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) { entry.target.classList.add('reveal-visible'); }
+                });
+            }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+
+            setTimeout(() => {
+                document.querySelectorAll('.reveal-element').forEach(el => observer.observe(el));
+            }, 100);
+        });
+    </script>
+</body>
+</html>
